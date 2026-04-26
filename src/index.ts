@@ -1,11 +1,16 @@
 import { Elysia } from "elysia";
+import { cors } from "@elysiajs/cors";
 
 console.log("Environment:", process.env.NODE_ENV);
 console.log("PORT:", process.env.PORT);
 console.log("DATABASE_URL:", process.env.DATABASE_URL);
 console.log("AI_KEY:", process.env.AI_KEY);
 
-const app = new Elysia().get("/", () => "Hello Elysia").listen(Number(process.env.PORT) || 3002);
+const app = new Elysia()
+  .use(cors())
+  .get("/", () => "Hello Elysia")
+  .get("/api/todo", () => "todo list...")
+  .listen(Number(process.env.PORT) || 3002);
 
 console.log(
   `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
