@@ -16,5 +16,5 @@ export const app = new Elysia()
     return { success: false, error: "Internal server error" };
   })
   .use(apiRouter)
-  .get("/", () => "Hello Elysia")
+  .get("/", () => ({ success: true, data: "Hello Elysia" }))
   .listen(config.PORT);
