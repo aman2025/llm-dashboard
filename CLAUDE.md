@@ -29,3 +29,8 @@ Three env files exist for different stages:
 - `.env.production` - production (PORT=3002, DATABASE_URL=mongodb://atlas/prod, AI_KEY set)
 
 The server logs all env vars at startup (NODE_ENV, PORT, DATABASE_URL, AI_KEY).
+
+## Code Style
+
+Follow these rules when writing code:
+- 2 space indent, 80 print width, semicolons, double quotes, no trailing commas
