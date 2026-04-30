@@ -3,21 +3,29 @@
   "version": "1.0.50",
   "scripts": {
     "dev": "bun run --env-file=.env.development --watch src/index.ts",
-    "start": "bun run --env-file=.env.production src/index.ts"
+    "start": "bun run --env-file=.env.production src/index.ts",
+    "db:seed": "bun run prisma/seed.ts"
   },
   "dependencies": {
     "@elysiajs/cors": "^1.4.2",
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
     "elysia": "latest",
+    "pg": "^8.20.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "bun-types": "latest",
     "@typescript-eslint/eslint-plugin": "^8.58.2",
     "@typescript-eslint/parser": "^8.58.2",
+    "bun-types": "latest",
     "eslint": "^10.2.1",
     "eslint-plugin-prettier": "^5.5.5",
     "prettier": "^3.8.3",
-    "prettier-eslint": "^16.4.2"
+    "prettier-eslint": "^16.4.2",
+    "prisma": "^7.8.0"
+  },
+  "prisma": {
+    "seed": "bun run prisma/seed.ts"
   },
   "module": "src/index.js"
 }

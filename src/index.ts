@@ -1,17 +1,19 @@
-import { Elysia } from "elysia";
-import { cors } from "@elysiajs/cors";
+/* eslint-disable no-console */
+import { app } from "./app";
+import { prisma } from "@/lib/prisma";
+import { config } from "@/config";
 
-console.log("Environment:", process.env.NODE_ENV);
-console.log("PORT:", process.env.PORT);
-console.log("DATABASE_URL:", process.env.DATABASE_URL);
-console.log("AI_KEY:", process.env.AI_KEY);
+console.log("Environment:", config.NODE_ENV);
+console.log("PORT:", config.PORT);
+console.log("DATABASE_URL:", config.DATABASE_URL);
 
-const app = new Elysia()
-  .use(cors())
-  .get("/", () => "Hello Elysia")
-  .get("/api/todo", () => "todo list...")
-  .listen(Number(process.env.PORT) || 3002);
+app.onStart(() => {
+  console.log("Connecting to database...");
+});
 
-console.log(
-  `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
-);
+app.onStop(async () => {
+  console.log("Disconnecting from database...");
+  await prisma.$disconnect();
+});
+
+console.log(`🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`);
