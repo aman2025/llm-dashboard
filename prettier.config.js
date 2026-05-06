@@ -1,10 +1,10 @@
 export default {
   tabWidth: 2,
   printWidth: 80,
-  semi: true,
-  useTabs: false,
+  semi: false,
+  useTabs: true,
   bracketSpacing: true,
-  singleQuote: false,
+  singleQuote: true,
   endOfLine: "auto",
   trailingComma: "none",
   arrowParens: "always",
