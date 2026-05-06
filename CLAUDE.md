@@ -84,5 +84,10 @@ Key variables: `DATABASE_URL` (required), `PORT` (default 3002), `NODE_ENV`
 
 ## Code Style
 
-Follow these rules when writing code:
-- 2 space indent, 80 print width, semicolons, double quotes, no trailing commas
+Generate code matching these conventions directly — do not rely on Prettier to fix style afterward:
+
+- 2 space indentation
+- 80 character line width
+- Semicolons at statement ends
+- Double quotes for strings
+- No trailing commas in arrays/objects
