@@ -5,6 +5,12 @@ import { AppError, getHttpStatus } from "@/lib/errors";
 import { config } from "@/config";
 
 export const app = new Elysia()
+  // CORS: only allows http://localhost:3000/ and http://192.168.2.5:3000 to request; all other origins are blocked
+  // .use(cors({
+  //     origin: ["http://localhost:3000", "http://192.168.2.5:3000"],
+  //     credentials: true
+  //   }
+  // ))
   .use(cors())
   .onError(({ error, set }) => {
     if (error instanceof AppError) {
