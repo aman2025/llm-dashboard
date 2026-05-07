@@ -88,6 +88,6 @@ Generate code matching these conventions directly — do not rely on Prettier to
 
 - 2 space indentation
 - 80 character line width
-- Semicolons at statement ends
-- Double quotes for strings
+- No semicolons at statement ends
+- Single quotes for strings
 - No trailing commas in arrays/objects
