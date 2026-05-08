@@ -2,49 +2,26 @@ import { Elysia } from 'elysia'
 import { settingsService } from './service'
 import { Models } from './models'
 import { AppError } from '@/lib/errors'
-import { wrapResponse, createError } from '@/lib/response'
 
 export const settingsRouter = new Elysia({ prefix: '/settings' })
   .get('/', async () => {
-    const settings = await settingsService.getSettings()
-    return wrapResponse(settings)
+    return await settingsService.getSettings()
   })
-  .patch('/', async ({ body, set }) => {
+  .patch('/', async ({ body }) => {
     const parseResult = Models.update.safeParse(body)
     if (!parseResult.success) {
-      set.status = 400
-      return createError('Validation failed', parseResult.error.flatten())
+      throw new AppError('VALIDATION_ERROR', 'Validation failed')
     }
-    const settings = await settingsService.updateSettings(parseResult.data)
-    return wrapResponse(settings)
+    return await settingsService.updateSettings(parseResult.data)
   })
-  .post('/llm-names', async ({ body, set }) => {
+  .post('/llm-names', async ({ body }) => {
     const parseResult = Models.addLlmName.safeParse(body)
     if (!parseResult.success) {
-      set.status = 400
-      return createError('Validation failed', parseResult.error.flatten())
+      throw new AppError('VALIDATION_ERROR', 'Validation failed')
     }
-    try {
-      const settings = await settingsService.addLlmName(parseResult.data.name)
-      return wrapResponse(settings)
-    } catch (error: unknown) {
-      if (error instanceof AppError && error.code === 'CONFLICT') {
-        set.status = 409
-        return createError(error.message)
-      }
-      throw error
-    }
+    return await settingsService.addLlmName(parseResult.data.name)
   })
-  .delete('/llm-names/:name', async ({ params, set }) => {
+  .delete('/llm-names/:name', async ({ params }) => {
     const name = decodeURIComponent(params.name)
-    try {
-      const settings = await settingsService.removeLlmName(name)
-      return wrapResponse(settings)
-    } catch (error: unknown) {
-      if (error instanceof AppError && error.code === 'NOT_FOUND') {
-        set.status = 404
-        return createError(error.message)
-      }
-      throw error
-    }
+    return await settingsService.removeLlmName(name)
   })
