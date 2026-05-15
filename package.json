@@ -1,7 +1,7 @@
 {
   "name": "llm-dashboard",
   "version": "1.0.0",
-  "description": "Debug local large language models, including instruction following, tool calling, token usage monitoring, token generation speed, context window size, etc.",
+  "description": "Debug local large language models, including instruction following, tool calling, token usage monitoring, token generation speed, context window size, etc., as well as analyzing LLM reasoning process, reasoning efficiency, and accuracy.",
   "scripts": {
     "dev": "bun run --env-file=.env.development --watch src/index.ts",
     "start": "bun run --env-file=.env.production src/index.ts",
