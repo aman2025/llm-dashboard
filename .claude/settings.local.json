@@ -7,5 +7,10 @@
       "mcp__postgres__schema_describe_table",
       "mcp__postgres__sql_execute"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "chrome-devtools",
+    "postgres",
+    "context7"
+  ]
 }
