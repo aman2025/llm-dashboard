@@ -1,5 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { settingsApi, type Settings, type SettingsUpdate } from '@/api/endpoints/settings'
+import {
+  settingsApi,
+  type Settings,
+  type SettingsUpdate
+} from '@/api/endpoints/settings'
 
 export const settingsKeys = {
   all: ['settings'] as const,

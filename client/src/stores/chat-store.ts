@@ -20,7 +20,10 @@ interface ChatState {
   activeSessionId: string | null
   createSession: (modelName: string) => string
   deleteSession: (sessionId: string) => void
-  addMessage: (sessionId: string, message: Omit<ChatMessage, 'id' | 'timestamp'>) => void
+  addMessage: (
+    sessionId: string,
+    message: Omit<ChatMessage, 'id' | 'timestamp'>
+  ) => void
   setActiveSession: (sessionId: string | null) => void
 }
 
@@ -48,7 +51,8 @@ export const useChatStore = create<ChatState>()(
       deleteSession: (sessionId) => {
         set((state) => ({
           sessions: state.sessions.filter((s) => s.id !== sessionId),
-          activeSessionId: state.activeSessionId === sessionId ? null : state.activeSessionId
+          activeSessionId:
+            state.activeSessionId === sessionId ? null : state.activeSessionId
         }))
       },
 

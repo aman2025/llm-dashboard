@@ -20,18 +20,26 @@ export const settingsApi = {
   },
 
   update: async (data: SettingsUpdate): Promise<Settings> => {
-    const response = await apiClient.patch<ApiResponse<Settings>>('/settings', data)
+    const response = await apiClient.patch<ApiResponse<Settings>>(
+      '/settings',
+      data
+    )
     return unwrapResponse(response)
   },
 
   addLlmName: async (name: string): Promise<Settings> => {
-    const response = await apiClient.post<ApiResponse<Settings>>('/settings/llm-names', { name })
+    const response = await apiClient.post<ApiResponse<Settings>>(
+      '/settings/llm-names',
+      { name }
+    )
     return unwrapResponse(response)
   },
 
   removeLlmName: async (name: string): Promise<Settings> => {
     const encodedName = encodeURIComponent(name)
-    const response = await apiClient.delete<ApiResponse<Settings>>(`/settings/llm-names/${encodedName}`)
+    const response = await apiClient.delete<ApiResponse<Settings>>(
+      `/settings/llm-names/${encodedName}`
+    )
     return unwrapResponse(response)
   }
 }
