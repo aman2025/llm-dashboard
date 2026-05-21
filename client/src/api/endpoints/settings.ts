@@ -1,5 +1,4 @@
 import { apiClient } from '../axios'
-import { unwrapResponse, type ApiResponse } from '../response'
 
 export interface Settings {
   interfaceLanguage: string
@@ -14,32 +13,20 @@ export interface SettingsUpdate {
 }
 
 export const settingsApi = {
-  get: async (): Promise<Settings> => {
-    const response = await apiClient.get<ApiResponse<Settings>>('/settings')
-    return unwrapResponse(response)
-  },
+  /** Get settings */
+  get: () => apiClient.get<Settings>('/settings'),
 
-  update: async (data: SettingsUpdate): Promise<Settings> => {
-    const response = await apiClient.patch<ApiResponse<Settings>>(
-      '/settings',
-      data
-    )
-    return unwrapResponse(response)
-  },
+  /** Update settings */
+  update: (data: SettingsUpdate) =>
+    apiClient.patch<Settings>('/settings', data),
 
-  addLlmName: async (name: string): Promise<Settings> => {
-    const response = await apiClient.post<ApiResponse<Settings>>(
-      '/settings/llm-names',
-      { name }
-    )
-    return unwrapResponse(response)
-  },
+  /** Add an LLM name */
+  addLlmName: (name: string) =>
+    apiClient.post<Settings>('/settings/llm-names', { name }),
 
-  removeLlmName: async (name: string): Promise<Settings> => {
-    const encodedName = encodeURIComponent(name)
-    const response = await apiClient.delete<ApiResponse<Settings>>(
-      `/settings/llm-names/${encodedName}`
+  /** Remove an LLM name */
+  removeLlmName: (name: string) =>
+    apiClient.delete<Settings>(
+      `/settings/llm-names/${encodeURIComponent(name)}`
     )
-    return unwrapResponse(response)
-  }
 }

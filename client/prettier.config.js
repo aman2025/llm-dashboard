@@ -5,8 +5,8 @@ export default {
   useTabs: false,
   bracketSpacing: true,
   singleQuote: true,
-  endOfLine: "auto",
-  trailingComma: "none",
-  arrowParens: "always",
+  endOfLine: 'auto',
+  trailingComma: 'none',
+  arrowParens: 'always',
   bracketSameLine: false
-};
+}
