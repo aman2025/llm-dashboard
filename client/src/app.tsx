@@ -1,12 +1,15 @@
 import { RouterProvider } from '@tanstack/react-router'
 import { router } from './routes/router'
 import { ToastProvider } from './components/ui/toaster'
+import { QueryProvider } from './components/providers/query-provider'
 
 export function App() {
   return (
-    <ToastProvider>
-      <RouterProvider router={router} />
-    </ToastProvider>
+    <QueryProvider>
+      <ToastProvider>
+        <RouterProvider router={router} />
+      </ToastProvider>
+    </QueryProvider>
   )
 }
 
