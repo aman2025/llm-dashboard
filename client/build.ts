@@ -17,7 +17,7 @@ const result = await Bun.build({
   define: {
     'process.env.NODE_ENV': JSON.stringify('production'),
     // 🔥 关键：强制打包成相对路径（部署用）
-    'process.env.BASE_URL': JSON.stringify('/api/')
+    'process.env.BUN_PUBLIC_BASE_URL': JSON.stringify('/api/')
   }
 })
 
