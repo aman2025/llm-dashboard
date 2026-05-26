@@ -15,16 +15,25 @@ export interface ApiError {
   details?: unknown
 }
 
+/** Error codes for different error types */
+export type ErrorCode =
+  | 'BUSINESS_ERROR'
+  | 'TIMEOUT'
+  | 'NETWORK_ERROR'
+  | 'HTTP_ERROR'
+  | 'FORMAT_ERROR'
+  | 'UNKNOWN_ERROR'
+
 /** Unified custom request error class */
 export class ApiRequestError extends Error {
   public status: number
-  public code: string
+  public code: ErrorCode
   public details: unknown
 
   constructor(
     message: string,
     status: number,
-    code: string = 'UNKNOWN_ERROR',
+    code: ErrorCode = 'UNKNOWN_ERROR',
     details?: unknown
   ) {
     super(message)
@@ -38,7 +47,7 @@ export class ApiRequestError extends Error {
 // ==================== Axios Instance ====================
 
 export const apiClient = axios.create({
-  baseURL: process.env.BUN_PUBLIC_BASE_URL || 'http://localhost:3002/api',
+  baseURL: process.env.BUN_PUBLIC_BASE_URL,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
@@ -61,14 +70,12 @@ apiClient.interceptors.request.use(
 // ==================== Response Interceptor ====================
 
 apiClient.interceptors.response.use(
-  // Success interceptor: aggressive unwrapping, directly return business data
+  // Success interceptor: unwraps response and returns business data
   (response) => {
     const body = response.data
-    // Assume backend all interfaces follow ApiResponse format
     if (body && body.success === true) {
-      return body.data // Caller directly gets T
+      return body.data
     }
-    // If success response has success !== true, treat as format error
     return Promise.reject(
       new ApiRequestError(
         'Unexpected response format',
@@ -77,9 +84,9 @@ apiClient.interceptors.response.use(
       )
     )
   },
-  // Error interceptor: uniformly wrap as ApiRequestError
+  // Error interceptor: wraps all errors as ApiRequestError
   (error: AxiosError<ApiError>) => {
-    // 1. Server returned business error
+    // Server returned business error
     if (error.response?.data && error.response.data.success === false) {
       return Promise.reject(
         new ApiRequestError(
@@ -91,21 +98,17 @@ apiClient.interceptors.response.use(
       )
     }
 
-    // 2. Request timeout
+    // Request timeout
     if (error.code === 'ECONNABORTED') {
-      return Promise.reject(
-        new ApiRequestError('Request timeout', 408, 'TIMEOUT')
-      )
+      return Promise.reject(new ApiRequestError('Request timeout', 408, 'TIMEOUT'))
     }
 
-    // 3. Network error (no response)
+    // Network error (no response)
     if (!error.response) {
-      return Promise.reject(
-        new ApiRequestError('Network error', 0, 'NETWORK_ERROR')
-      )
+      return Promise.reject(new ApiRequestError('Network error', 0, 'NETWORK_ERROR'))
     }
 
-    // 4. Other HTTP errors (e.g. 500, but backend didn't return ApiError format)
+    // Other HTTP errors
     return Promise.reject(
       new ApiRequestError(error.message, error.response.status, 'HTTP_ERROR')
     )

@@ -1,5 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState } from 'react'
+import { ApiRequestError } from '@/api/axios'
+import { emitToast } from '@/components/ui/toaster'
 
 export function QueryProvider({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -9,6 +11,22 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
           queries: {
             staleTime: 60 * 1000,
             retry: 1
+          },
+          mutations: {
+            onError: (error) => {
+              // Skip if mutation opts out of global error toast
+              if ((error as Error & { skipGlobalToast?: boolean }).skipGlobalToast) {
+                return
+              }
+
+              // Only show toast for non-business errors (timeout, network, HTTP)
+              if (error instanceof ApiRequestError && error.code !== 'BUSINESS_ERROR') {
+                emitToast({
+                  message: error.message,
+                  variant: 'error'
+                })
+              }
+            }
           }
         }
       })

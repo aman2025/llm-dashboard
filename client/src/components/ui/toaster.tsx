@@ -21,12 +21,18 @@ interface ToastContextValue {
 
 const ToastContext = React.createContext<ToastContextValue | null>(null)
 
+const toastEventEmitter = typeof window !== 'undefined' ? new EventTarget() : null
+
 export function useToast() {
   const context = React.useContext(ToastContext)
   if (!context) {
     throw new Error('useToast must be used within a ToastProvider')
   }
   return context
+}
+
+export function emitToast(toast: Omit<ToastItem, 'id'>) {
+  toastEventEmitter?.dispatchEvent(new CustomEvent('toast', { detail: toast }))
 }
 
 export function ToastProvider({
@@ -37,6 +43,15 @@ export function ToastProvider({
   className?: string
 }) {
   const [toasts, setToasts] = React.useState<ToastItem[]>([])
+
+  React.useEffect(() => {
+    const handler = (e: Event) => {
+      const customEvent = e as CustomEvent<Omit<ToastItem, 'id'>>
+      addToast(customEvent.detail)
+    }
+    toastEventEmitter?.addEventListener('toast', handler)
+    return () => toastEventEmitter?.removeEventListener('toast', handler)
+  }, [])
 
   const addToast = React.useCallback((toast: Omit<ToastItem, 'id'>) => {
     const id = Math.random().toString(36).slice(2)
