@@ -1,9 +1,33 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import {
+  QueryClient,
+  QueryClientProvider,
+  QueryCache
+} from '@tanstack/react-query'
 import { useState } from 'react'
 import { ApiRequestError } from '@/api/axios'
 import { emitToast } from '@/components/ui/toaster'
 
 export function QueryProvider({ children }: { children: React.ReactNode }) {
+  const queryCache = new QueryCache({
+    onError: (error, query) => {
+      // Skip if query opts out of global error toast
+      if (
+        (query as { meta?: { skipGlobalToast?: boolean } }).meta
+          ?.skipGlobalToast
+      ) {
+        return
+      }
+
+      // Only show toast for non-business errors
+      if (error instanceof ApiRequestError && error.code !== 'BUSINESS_ERROR') {
+        emitToast({
+          message: error.message,
+          variant: 'error'
+        })
+      }
+    }
+  })
+
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -15,12 +39,17 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
           mutations: {
             onError: (error) => {
               // Skip if mutation opts out of global error toast
-              if ((error as Error & { skipGlobalToast?: boolean }).skipGlobalToast) {
+              if (
+                (error as Error & { skipGlobalToast?: boolean }).skipGlobalToast
+              ) {
                 return
               }
 
               // Only show toast for non-business errors (timeout, network, HTTP)
-              if (error instanceof ApiRequestError && error.code !== 'BUSINESS_ERROR') {
+              if (
+                error instanceof ApiRequestError &&
+                error.code !== 'BUSINESS_ERROR'
+              ) {
                 emitToast({
                   message: error.message,
                   variant: 'error'
@@ -28,7 +57,8 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
               }
             }
           }
-        }
+        },
+        queryCache
       })
   )
 

@@ -100,12 +100,16 @@ apiClient.interceptors.response.use(
 
     // Request timeout
     if (error.code === 'ECONNABORTED') {
-      return Promise.reject(new ApiRequestError('Request timeout', 408, 'TIMEOUT'))
+      return Promise.reject(
+        new ApiRequestError('Request timeout', 408, 'TIMEOUT')
+      )
     }
 
     // Network error (no response)
     if (!error.response) {
-      return Promise.reject(new ApiRequestError('Network error', 0, 'NETWORK_ERROR'))
+      return Promise.reject(
+        new ApiRequestError('Network error', 0, 'NETWORK_ERROR')
+      )
     }
 
     // Other HTTP errors

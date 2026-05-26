@@ -21,7 +21,8 @@ interface ToastContextValue {
 
 const ToastContext = React.createContext<ToastContextValue | null>(null)
 
-const toastEventEmitter = typeof window !== 'undefined' ? new EventTarget() : null
+const toastEventEmitter =
+  typeof window !== 'undefined' ? new EventTarget() : null
 
 export function useToast() {
   const context = React.useContext(ToastContext)
