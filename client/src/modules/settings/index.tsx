@@ -2,29 +2,17 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useToast } from '@/components/ui/toaster'
 import { useSettings, useUpdateSettings } from './hooks/use-settings'
 
 export default function SettingsPage() {
   const { data: settings } = useSettings()
   const updateSettings = useUpdateSettings()
   const [language, setLanguage] = useState('')
-  const { addToast } = useToast()
 
   const handleUpdate = () => {
     if (!language.trim()) return
-    updateSettings.mutate(
-      { interfaceLanguage: language },
-      {
-        onSuccess: () => {
-          addToast({ message: 'Settings updated', variant: 'success' })
-          setLanguage('')
-        },
-        onError: (error) => {
-          addToast({ message: error.message, variant: 'error' })
-        }
-      }
-    )
+    updateSettings.mutate({ interfaceLanguage: language })
+    setLanguage('')
   }
 
   return (

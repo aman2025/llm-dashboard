@@ -37,11 +37,9 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
             retry: 1
           },
           mutations: {
-            onError: (error) => {
+            onError: (error, _variables, _context, mutation) => {
               // Skip if mutation opts out of global error toast
-              if (
-                (error as Error & { skipGlobalToast?: boolean }).skipGlobalToast
-              ) {
+              if (mutation?.meta?.skipGlobalToast) {
                 return
               }
 
