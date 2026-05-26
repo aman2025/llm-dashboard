@@ -1,0 +1,57 @@
+<h2>AI Chat Layout</h2>
+<p class="subtitle">3-column layout with history, conversation, and input</p>
+
+<div class="mockup">
+  <div class="mockup-header">Layout A: Classic Sidebar</div>
+  <div class="mockup-body">
+    <div style="display:flex;height:480px;background:#1a1a2e;border-radius:12px;overflow:hidden">
+      <div style="width:240px;background:#16213e;padding:16px;display:flex;flex-direction:column">
+        <div style="height:32px;background:#0f3460;border-radius:6px;margin-bottom:12px"></div>
+        <div style="flex:1;overflow-y:auto">
+          <div style="height:48px;background:#0f3460;border-radius:6px;margin-bottom:8px"></div>
+          <div style="height:48px;background:#1a1a2e;border-radius:6px;margin-bottom:8px"></div>
+          <div style="height:48px;background:#1a1a2e;border-radius:6px"></div>
+        </div>
+      </div>
+      <div style="flex:1;padding:24px;display:flex;flex-direction:column">
+        <div style="flex:1;background:#0f3460;border-radius:8px;margin-bottom:16px"></div>
+        <div style="height:56px;background:#16213e;border-radius:8px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:24px">
+  <div class="mockup-header">Layout B: Floating Panels</div>
+  <div class="mockup-body">
+    <div style="display:flex;height:480px;background:#1a1a2e;border-radius:12px;overflow:hidden;gap:16px;padding:16px">
+      <div style="width:200px;background:#16213e;padding:16px;border-radius:12px">
+        <div style="height:28px;background:#0f3460;border-radius:6px;margin-bottom:12px"></div>
+        <div style="height:40px;background:#0f3460;border-radius:6px;margin-bottom:8px;opacity:0.6"></div>
+        <div style="height:40px;background:#0f3460;border-radius:6px;margin-bottom:8px;opacity:0.6"></div>
+        <div style="height:40px;background:#0f3460;border-radius:6px;opacity:0.6"></div>
+      </div>
+      <div style="flex:1;background:#16213e;border-radius:12px;padding:20px;display:flex;flex-direction:column">
+        <div style="flex:1;background:#0f3460;border-radius:8px"></div>
+        <div style="height:52px;background:#1a1a2e;border-radius:8px;margin-top:16px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="options" style="margin-top:24px">
+  <div class="option" data-choice="layout-a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Classic Sidebar</h3>
+      <p>240px history panel, wide conversation area, full-width input</p>
+    </div>
+  </div>
+  <div class="option" data-choice="layout-b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Floating Panels</h3>
+      <p>Compact 200px sidebar, rounded panels with gaps, inset input</p>
+    </div>
+  </div>
+</div>
