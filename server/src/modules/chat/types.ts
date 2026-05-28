@@ -36,6 +36,7 @@ export interface LLMStreamChunk {
   choices?: Array<{
     delta?: {
       content?: string
+      reasoning_content?: string
     }
   }>
 }
