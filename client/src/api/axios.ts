@@ -46,8 +46,10 @@ export class ApiRequestError extends Error {
 
 // ==================== Axios Instance ====================
 
+const baseURL = (process.env.BUN_PUBLIC_BASE_URL || 'http://localhost:3002/api').replace(/\/+$/, '')
+
 export const apiClient = axios.create({
-  baseURL: process.env.BUN_PUBLIC_BASE_URL,
+  baseURL,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'

@@ -24,6 +24,16 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --radius: calc(var(--radius) - 2px);
+  /* Deep Space theme variables */
+  --color-space-background: #0a0a1a;
+  --color-space-sidebar: #16213e;
+  --color-space-panel: #16213e;
+  --color-space-input-bg: #1a1a2e;
+  --color-space-accent: #6061f5;
+  --color-space-accent-glow: rgba(96, 97, 245, 0.3);
+  --color-space-text: #e0e0e0;
+  --color-space-muted: #6b7280;
+  --color-space-border: rgba(255, 255, 255, 0.03);
 }
 
 :root {

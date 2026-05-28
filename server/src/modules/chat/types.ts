@@ -1,5 +1,5 @@
 export interface ChatStreamRequest {
-  sessionId: string
+  sessionId?: string
   message: string
 }
 
@@ -24,4 +24,18 @@ export interface SSEEvent {
   reasoning?: string
   done?: boolean
   error?: string
+  sessionId?: string
+}
+
+export interface LLMMessage {
+  role: string
+  content: string
+}
+
+export interface LLMStreamChunk {
+  choices?: Array<{
+    delta?: {
+      content?: string
+    }
+  }>
 }

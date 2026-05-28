@@ -18,16 +18,24 @@ export const app = new Elysia()
     set.status = 500
     return createError('Internal server error')
   })
-  .onAfterHandle({ as: 'global' }, ({ responseValue, set }) => {
+  .onAfterHandle({ as: 'global' }, ({ response, set, path }) => {
+    // Don't wrap streaming responses or responses that already have success field
     if (
-      typeof responseValue === 'object' &&
-      responseValue !== null &&
-      'success' in responseValue
+      response instanceof ReadableStream ||
+      (typeof response === 'object' &&
+        response !== null &&
+        'success' in response)
     ) {
-      return responseValue
+      return response
     }
+
+    // Skip wrapping entirely for streaming endpoints
+    if (path === '/api/chat/stream') {
+      return response
+    }
+
     set.headers['X-Content-Type-Options'] = 'nosniff'
-    return wrapResponse(responseValue)
+    return wrapResponse(response)
   })
   .use(apiRouter)
   .get('/', () => 'Hello Elysia')
