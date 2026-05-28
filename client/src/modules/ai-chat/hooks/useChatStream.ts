@@ -56,7 +56,7 @@ export function useChatStream() {
         const decoder = new TextDecoder()
         let buffer = ''
         let accumulatedContent = ''
-        let reasoning = ''
+        let accumulatedReasoning = ''
 
         while (true) {
           const { done, value } = await reader.read()
@@ -84,10 +84,10 @@ export function useChatStream() {
                 })
               }
 
-              if (event.reasoning) {
-                reasoning = event.reasoning
+              if (event.reasoning !== undefined) {
+                accumulatedReasoning = event.reasoning
                 updateMessage(sessionId, assistantMsgId, {
-                  reasoning
+                  reasoning: accumulatedReasoning
                 })
               }
 

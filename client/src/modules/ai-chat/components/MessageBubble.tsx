@@ -1,12 +1,14 @@
 import { clsx } from 'clsx'
-import type { ChatMessage } from '../api/chat'
+import { Loader2 } from 'lucide-react'
+import type { ChatMessage } from '@/stores/chat-store'
 import { ReasonBlock } from './ReasonBlock'
 
 interface MessageBubbleProps {
   message: ChatMessage
+  isStreaming?: boolean
 }
 
-export function MessageBubble({ message }: MessageBubbleProps) {
+export function MessageBubble({ message, isStreaming = false }: MessageBubbleProps) {
   const isUser = message.role === 'user'
 
   return (
@@ -19,10 +21,15 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             : 'bg-white/5 text-foreground'
         )}
       >
-        <div className="whitespace-pre-wrap text-sm">{message.content}</div>
         {!isUser && message.reasoning && (
-          <ReasonBlock reasoning={message.reasoning} />
+          <ReasonBlock reasoning={message.reasoning} isStreaming={isStreaming} />
         )}
+        <div className={clsx('whitespace-pre-wrap text-sm', !isUser && message.reasoning && 'mt-2')}>
+          {message.content}
+          {isStreaming && !message.content && (
+            <Loader2 className="inline-block w-4 h-4 text-indigo-400 animate-spin ml-1" />
+          )}
+        </div>
       </div>
     </div>
   )

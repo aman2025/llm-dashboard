@@ -20,7 +20,19 @@ export function ChatSidebar() {
       })
       const json = await res.json()
       if (json.success && json.data?.id) {
-        setActiveSession(json.data.id)
+        const sessionId = json.data.id
+        
+        // Create session in Zustand store with server's ID for real-time updates
+        const { loadSession } = useChatStore.getState()
+        loadSession({
+          id: sessionId,
+          modelName: 'qwen-mlx',
+          messages: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        })
+        
+        setActiveSession(sessionId)
         queryClient.invalidateQueries({ queryKey: ['chat-sessions'] })
       }
     } catch (err) {
