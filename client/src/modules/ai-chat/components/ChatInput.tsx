@@ -25,7 +25,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   }
 
   return (
-    <div className="flex items-end gap-3 p-4 bg-space-input-bg rounded-xl border border-space-border">
+    <div className="flex items-end gap-3 h-full px-4 py-3 bg-space-input-bg rounded-lg border border-space-border">
       <textarea
         ref={textareaRef}
         value={value}
@@ -38,14 +38,14 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
         }}
         placeholder="Type a message..."
         disabled={disabled}
-        className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground resize-none outline-none min-h-[24px]"
+        className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground resize-none outline-none min-h-[24px] max-h-[48px]"
         rows={1}
       />
       <button
         onClick={handleSubmit}
         disabled={disabled || !value.trim()}
         className={clsx(
-          'p-2 rounded-lg transition-colors',
+          'p-2 rounded-lg transition-colors flex-shrink-0',
           disabled || !value.trim()
             ? 'bg-indigo-500/20 text-muted-foreground'
             : 'bg-indigo-500 text-white hover:bg-indigo-600'

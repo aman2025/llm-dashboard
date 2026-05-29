@@ -8,7 +8,7 @@ import type {
 
 const API_URL = 'http://192.168.2.8:8000/v1/chat/completions'
 const API_KEY = 'zr425899'
-const MODEL = 'MLX-Qwen3.5-9B-Claude-4.6-Opus-6bit'
+const MODEL = 'qwen-mlx'
 const SYSTEM_PROMPT = 'You are a helpful AI assistant.'
 
 export const chatService = {
@@ -156,14 +156,14 @@ export const chatService = {
 
           try {
             const parsed: LLMStreamChunk = JSON.parse(data)
-            
+
             // Log the full parsed chunk structure
             chunkCount++
             console.log(`\n--- Chunk ${chunkCount} ---`)
             console.log('Full parsed object:', JSON.stringify(parsed, null, 2))
-            
+
             const delta = parsed.choices?.[0]?.delta
-            
+
             // Handle regular content
             const content = delta?.content
             if (content) {
@@ -171,7 +171,7 @@ export const chatService = {
               fullContent += content
               onEvent({ content })
             }
-            
+
             // Handle reasoning_content field (MLX-Qwen format)
             const reasoning = delta?.reasoning_content
             if (reasoning) {

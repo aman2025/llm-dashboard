@@ -41,7 +41,7 @@ export function ChatSidebar() {
   }
 
   return (
-    <div className="w-[200px] bg-space-sidebar rounded-xl p-4 flex flex-col h-full">
+    <div className="flex flex-col h-full p-4 border border-[#242a41] rounded-xl" style={{ width: '258px', backgroundColor: '#10162f' }}>
       <button
         onClick={handleNewChat}
         className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 transition-colors text-sm mb-4"
