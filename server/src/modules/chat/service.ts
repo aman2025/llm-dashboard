@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { settingsService } from '@/modules/settings/service'
 import type {
   ChatStreamRequest,
   SSEEvent,
@@ -8,7 +9,6 @@ import type {
 
 const API_URL = 'http://192.168.2.8:8000/v1/chat/completions'
 const API_KEY = 'zr425899'
-const MODEL = 'qwen-mlx'
 const SYSTEM_PROMPT = 'You are a helpful AI assistant.'
 
 export const chatService = {
@@ -72,6 +72,14 @@ export const chatService = {
 
   async streamChat(req: ChatStreamRequest, onEvent: (event: SSEEvent) => void) {
     try {
+      // 0. Get active model from settings
+      const settings = await settingsService.getSettings()
+      const activeModel = settings.activeLlm?.name
+      
+      if (!activeModel) {
+        throw new Error('No active LLM model configured. Please select a model in settings.')
+      }
+
       // 1. Create session if needed
       let sessionId = req.sessionId
       if (!sessionId) {
@@ -115,7 +123,7 @@ export const chatService = {
           Authorization: `Bearer ${API_KEY}`
         },
         body: JSON.stringify({
-          model: MODEL,
+          model: activeModel,
           messages: llmMessages,
           stream: true
         })
@@ -138,7 +146,7 @@ export const chatService = {
       let chunkCount = 0
 
       console.log('\n=== LLM STREAM START ===')
-      console.log('Model:', MODEL)
+      console.log('Model:', activeModel)
       console.log('Session:', sessionId)
 
       while (true) {
