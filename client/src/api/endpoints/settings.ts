@@ -1,32 +1,30 @@
 import { apiClient } from '../axios'
 
-export interface Settings {
-  interfaceLanguage: string
-  llmNames: string[]
-  defaultLlmName: string
+export interface LlmModel {
+  id: string
+  name: string
+  size: string
+  type: string
+  description: string
+  fileSize: string
+  quantization: string
+  contextWindow: string
+  isActive: boolean
 }
 
-export interface SettingsUpdate {
-  interfaceLanguage?: string
-  llmNames?: string[]
-  defaultLlmName?: string
+export interface Settings {
+  activeLlmId: string | null
+  activeLlm: LlmModel | null
 }
 
 export const settingsApi = {
   /** Get settings */
   get: () => apiClient.get<Settings>('/settings'),
 
-  /** Update settings */
-  update: (data: SettingsUpdate) =>
-    apiClient.patch<Settings>('/settings', data),
+  /** Get all LLM models */
+  getAllLlmModels: () => apiClient.get<LlmModel[]>('/settings/llm-models'),
 
-  /** Add an LLM name */
-  addLlmName: (name: string) =>
-    apiClient.post<Settings>('/settings/llm-names', { name }),
-
-  /** Remove an LLM name */
-  removeLlmName: (name: string) =>
-    apiClient.delete<Settings>(
-      `/settings/llm-names/${encodeURIComponent(name)}`
-    )
+  /** Set active LLM model */
+  setActiveLlm: (llmId: string) =>
+    apiClient.patch<Settings>('/settings/active-llm', { llmId })
 }

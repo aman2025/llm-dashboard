@@ -1,23 +1,38 @@
 import { z } from 'zod'
 
 export const Models = {
-  settings: z.object({
-    interfaceLanguage: z.string().min(2).max(10),
-    llmNames: z.array(z.string().min(1)),
-    defaultLlmName: z.string()
+  llmModel: z.object({
+    id: z.string(),
+    name: z.string(),
+    size: z.string(),
+    type: z.string(),
+    description: z.string(),
+    fileSize: z.string(),
+    quantization: z.string(),
+    contextWindow: z.string(),
+    isActive: z.boolean()
   }),
-  update: z
-    .object({
-      interfaceLanguage: z.string().min(2).max(10).optional(),
-      llmNames: z.array(z.string().min(1)).optional(),
-      defaultLlmName: z.string().optional()
-    })
-    .strict(),
-  addLlmName: z.object({
-    name: z.string().min(1).max(100)
+  settings: z.object({
+    activeLlmId: z.string().nullable(),
+    activeLlm: z
+      .object({
+        id: z.string(),
+        name: z.string(),
+        size: z.string(),
+        type: z.string(),
+        description: z.string(),
+        fileSize: z.string(),
+        quantization: z.string(),
+        contextWindow: z.string(),
+        isActive: z.boolean()
+      })
+      .nullable()
+  }),
+  updateActiveLlm: z.object({
+    llmId: z.string()
   })
 }
 
+export type LlmModel = z.infer<typeof Models.llmModel>
 export type Settings = z.infer<typeof Models.settings>
-export type SettingsUpdate = z.infer<typeof Models.update>
-export type AddLlmName = z.infer<typeof Models.addLlmName>
+export type UpdateActiveLlm = z.infer<typeof Models.updateActiveLlm>

@@ -3,13 +3,14 @@ import { emitToast } from '@/components/ui/toaster'
 import {
   settingsApi,
   type Settings,
-  type SettingsUpdate
+  type LlmModel
 } from '@/api/endpoints/settings'
 import { ApiRequestError } from '@/api/axios'
 
 export const settingsKeys = {
   all: ['settings'] as const,
-  detail: () => [...settingsKeys.all, 'detail'] as const
+  detail: () => [...settingsKeys.all, 'detail'] as const,
+  llmModels: () => [...settingsKeys.all, 'llm-models'] as const
 }
 
 export function useSettings() {
@@ -19,53 +20,36 @@ export function useSettings() {
   })
 }
 
-export function useUpdateSettings() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: (data: SettingsUpdate) => settingsApi.update(data),
-    meta: { skipGlobalToast: true },
-    onSuccess: (newSettings) => {
-      queryClient.setQueryData<Settings>(settingsKeys.detail(), newSettings)
-      emitToast({ message: 'Settings updated', variant: 'success' })
-    },
-    onError: (error) => {
-      // Handle business errors with toast
-      if (error instanceof ApiRequestError && error.code === 'BUSINESS_ERROR') {
-        emitToast({ message: error.message, variant: 'error' })
-      }
-      // Non-business errors (timeout, network, HTTP) are handled by QueryProvider
-    }
+export function useLlmModels() {
+  return useQuery({
+    queryKey: settingsKeys.llmModels(),
+    queryFn: () => settingsApi.getAllLlmModels()
   })
 }
 
-export function useAddLlmName() {
+export function useSetActiveLlm() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (name: string) => settingsApi.addLlmName(name),
+    mutationFn: (llmId: string) => settingsApi.setActiveLlm(llmId),
     meta: { skipGlobalToast: true },
     onSuccess: (newSettings) => {
+      // Update settings cache
       queryClient.setQueryData<Settings>(settingsKeys.detail(), newSettings)
-      emitToast({ message: 'LLM name added', variant: 'success' })
-    },
-    onError: (error) => {
-      if (error instanceof ApiRequestError && error.code === 'BUSINESS_ERROR') {
-        emitToast({ message: error.message, variant: 'error' })
-      }
-    }
-  })
-}
-
-export function useRemoveLlmName() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: (name: string) => settingsApi.removeLlmName(name),
-    meta: { skipGlobalToast: true },
-    onSuccess: (newSettings) => {
-      queryClient.setQueryData<Settings>(settingsKeys.detail(), newSettings)
-      emitToast({ message: 'LLM name removed', variant: 'success' })
+      
+      // Update LLM models cache to reflect active state
+      queryClient.setQueryData<LlmModel[]>(
+        settingsKeys.llmModels(),
+        (oldModels) => {
+          if (!oldModels) return oldModels
+          return oldModels.map((model) => ({
+            ...model,
+            isActive: model.id === newSettings.activeLlmId
+          }))
+        }
+      )
+      
+      emitToast({ message: 'Active model updated', variant: 'success' })
     },
     onError: (error) => {
       if (error instanceof ApiRequestError && error.code === 'BUSINESS_ERROR') {

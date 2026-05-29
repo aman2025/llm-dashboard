@@ -1,103 +1,86 @@
 import { prisma } from '@/lib/prisma'
 import { AppError } from '@/lib/errors'
-import type { Settings, SettingsUpdate } from './models'
+import type { Settings, LlmModel } from './models'
 
 export async function getSettings(): Promise<Settings> {
-  let settings = await prisma.settings.findUnique({ where: { id: 1 } })
+  let settings = await prisma.settings.findUnique({
+    where: { id: 1 },
+    include: {
+      activeLlm: true
+    }
+  })
 
   if (!settings) {
     settings = await prisma.settings.create({
-      data: {
-        id: 1,
-        interfaceLanguage: 'en',
-        llmNames: [],
-        defaultLlmName: ''
+      data: { id: 1 },
+      include: {
+        activeLlm: true
       }
     })
   }
 
   return {
-    interfaceLanguage: settings.interfaceLanguage,
-    llmNames: settings.llmNames,
-    defaultLlmName: settings.defaultLlmName
+    activeLlmId: settings.activeLlmId,
+    activeLlm: settings.activeLlm
   }
 }
 
-export async function updateSettings(data: SettingsUpdate): Promise<Settings> {
-  if (data.defaultLlmName && data.llmNames) {
-    if (!data.llmNames.includes(data.defaultLlmName)) {
-      throw new AppError(
-        'VALIDATION_ERROR',
-        'defaultLlmName must be in llmNames array'
-      )
-    }
+export async function getAllLlmModels(): Promise<LlmModel[]> {
+  const models = await prisma.llmModel.findMany({
+    orderBy: { createdAt: 'asc' }
+  })
+
+  return models.map((model) => ({
+    id: model.id,
+    name: model.name,
+    size: model.size,
+    type: model.type,
+    description: model.description,
+    fileSize: model.fileSize,
+    quantization: model.quantization,
+    contextWindow: model.contextWindow,
+    isActive: model.isActive
+  }))
+}
+
+export async function setActiveLlm(llmId: string): Promise<Settings> {
+  // Verify the LLM exists
+  const llm = await prisma.llmModel.findUnique({
+    where: { id: llmId }
+  })
+
+  if (!llm) {
+    throw new AppError('NOT_FOUND', `LLM model with id "${llmId}" not found`)
   }
 
+  // Update all models to inactive
+  await prisma.llmModel.updateMany({
+    data: { isActive: false }
+  })
+
+  // Set the selected model as active
+  await prisma.llmModel.update({
+    where: { id: llmId },
+    data: { isActive: true }
+  })
+
+  // Update settings
   const settings = await prisma.settings.update({
     where: { id: 1 },
-    data: {
-      interfaceLanguage: data.interfaceLanguage,
-      llmNames: data.llmNames,
-      defaultLlmName: data.defaultLlmName
+    data: { activeLlmId: llmId },
+    include: {
+      activeLlm: true
     }
   })
 
   return {
-    interfaceLanguage: settings.interfaceLanguage,
-    llmNames: settings.llmNames,
-    defaultLlmName: settings.defaultLlmName
-  }
-}
-
-export async function addLlmName(name: string): Promise<Settings> {
-  const settings = await getSettings()
-
-  if (settings.llmNames.includes(name)) {
-    throw new AppError('CONFLICT', `LLM name "${name}" already exists`)
-  }
-
-  const updated = await prisma.settings.update({
-    where: { id: 1 },
-    data: {
-      llmNames: [...settings.llmNames, name]
-    }
-  })
-
-  return {
-    interfaceLanguage: updated.interfaceLanguage,
-    llmNames: updated.llmNames,
-    defaultLlmName: updated.defaultLlmName
-  }
-}
-
-export async function removeLlmName(name: string): Promise<Settings> {
-  const settings = await getSettings()
-
-  if (!settings.llmNames.includes(name)) {
-    throw new AppError('NOT_FOUND', `LLM name "${name}" not found`)
-  }
-
-  const newDefaultLlmName =
-    settings.defaultLlmName === name ? '' : settings.defaultLlmName
-
-  const updated = await prisma.settings.update({
-    where: { id: 1 },
-    data: {
-      llmNames: settings.llmNames.filter((n) => n !== name),
-      defaultLlmName: newDefaultLlmName
-    }
-  })
-
-  return {
-    interfaceLanguage: updated.interfaceLanguage,
-    llmNames: updated.llmNames,
-    defaultLlmName: updated.defaultLlmName
+    activeLlmId: settings.activeLlmId,
+    activeLlm: settings.activeLlm
   }
 }
 
 export const settingsService = {
   getSettings,
-  updateSettings,
-  addLlmName,
-  removeLlmName
+  getAllLlmModels,
+  setActiveLlm
 } as const
