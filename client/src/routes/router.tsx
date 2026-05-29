@@ -1,35 +1,15 @@
 import {
   createRouter,
   createRoute,
-  createRootRoute,
-  Link,
-  Outlet
+  createRootRoute
 } from '@tanstack/react-router'
+import { AppLayout } from '../components/layout/layout'
 import DashboardPage from '../modules/dashboard'
 import SettingsPage from '../modules/settings'
 import ChatPage from '../modules/ai-chat'
 
 const rootRoute = createRootRoute({
-  component: () => (
-    <div className="flex flex-col h-screen">
-      <header className="border-b">
-        <nav className="flex items-center justify-center gap-8 p-4">
-          <Link to="/" className="text-sm font-medium">
-            Dashboard
-          </Link>
-          <Link to="/settings" className="text-sm font-medium">
-            Settings
-          </Link>
-          <Link to="/chat" className="text-sm font-medium">
-            AI Chat
-          </Link>
-        </nav>
-      </header>
-      <main className="flex-1 overflow-auto flex items-center justify-center">
-        <Outlet />
-      </main>
-    </div>
-  )
+  component: AppLayout
 })
 
 const indexRoute = createRoute({
