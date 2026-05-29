@@ -7,12 +7,16 @@ import { useSettings } from '@/modules/settings/hooks/use-settings'
 import { Brain } from 'lucide-react'
 
 export default function AiChatPage() {
-  const { startStream } = useChatStream()
+  const { startStream, stopStream, isStreaming } = useChatStream()
   const { activeSessionId } = useChatStore()
   const { data: settings } = useSettings()
 
   const handleSend = async (message: string) => {
     await startStream(message)
+  }
+
+  const handleStop = () => {
+    stopStream()
   }
 
   const activeLlmName = settings?.activeLlm?.name || 'No model selected'
@@ -44,7 +48,12 @@ export default function AiChatPage() {
 
           {/* Bottom - Input Area - 80px */}
           <div className="h-20 border-t border-[#1f2033] p-2.5">
-            <ChatInput onSend={handleSend} disabled={!activeSessionId} />
+            <ChatInput 
+              onSend={handleSend} 
+              onStop={handleStop}
+              disabled={!activeSessionId} 
+              isStreaming={isStreaming}
+            />
           </div>
         </div>
       </div>

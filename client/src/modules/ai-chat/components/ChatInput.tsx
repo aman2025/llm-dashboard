@@ -1,13 +1,15 @@
 import { useState, useRef, useEffect } from 'react'
-import { SendHorizontal } from 'lucide-react'
+import { SendHorizontal, Square } from 'lucide-react'
 import { clsx } from 'clsx'
 
 interface ChatInputProps {
   onSend: (message: string) => void
+  onStop?: () => void
   disabled?: boolean
+  isStreaming?: boolean
 }
 
-export function ChatInput({ onSend, disabled }: ChatInputProps) {
+export function ChatInput({ onSend, onStop, disabled, isStreaming }: ChatInputProps) {
   const [value, setValue] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -19,9 +21,15 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   }, [value])
 
   const handleSubmit = () => {
-    if (!value.trim() || disabled) return
+    if (!value.trim() || disabled || isStreaming) return
     onSend(value.trim())
     setValue('')
+  }
+
+  const handleStop = () => {
+    if (onStop) {
+      onStop()
+    }
   }
 
   return (
@@ -37,22 +45,32 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
           }
         }}
         placeholder="Type a message..."
-        disabled={disabled}
+        disabled={disabled || isStreaming}
         className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground resize-none outline-none min-h-[24px] max-h-[48px]"
         rows={1}
       />
-      <button
-        onClick={handleSubmit}
-        disabled={disabled || !value.trim()}
-        className={clsx(
-          'p-2 rounded-lg transition-colors flex-shrink-0',
-          disabled || !value.trim()
-            ? 'bg-indigo-500/20 text-muted-foreground'
-            : 'bg-indigo-500 text-white hover:bg-indigo-600'
-        )}
-      >
-        <SendHorizontal className="w-4 h-4" />
-      </button>
+      {isStreaming ? (
+        <button
+          onClick={handleStop}
+          className="p-2 rounded-lg transition-colors flex-shrink-0 bg-red-500 text-white hover:bg-red-600"
+          title="Stop generating"
+        >
+          <Square className="w-4 h-4" />
+        </button>
+      ) : (
+        <button
+          onClick={handleSubmit}
+          disabled={disabled || !value.trim()}
+          className={clsx(
+            'p-2 rounded-lg transition-colors flex-shrink-0',
+            disabled || !value.trim()
+              ? 'bg-indigo-500/20 text-muted-foreground'
+              : 'bg-indigo-500 text-white hover:bg-indigo-600'
+          )}
+        >
+          <SendHorizontal className="w-4 h-4" />
+        </button>
+      )}
     </div>
   )
 }

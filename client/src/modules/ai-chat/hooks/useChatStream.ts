@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useState, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useChatStore } from '@/stores/chat-store'
 import { chatApi } from '../api/chat'
@@ -7,6 +7,7 @@ export function useChatStream() {
   const { addMessage, updateMessage, activeSessionId, createSession } = useChatStore()
   const [isStreaming, setIsStreaming] = useState(false)
   const queryClient = useQueryClient()
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   const startStream = useCallback(
     async (message: string) => {
@@ -18,6 +19,9 @@ export function useChatStream() {
       }
 
       setIsStreaming(true)
+
+      // Create new AbortController for this stream
+      abortControllerRef.current = new AbortController()
 
       try {
         // Add user message immediately
@@ -41,7 +45,8 @@ export function useChatStream() {
         const response = await fetch(chatApi.getStreamUrl(), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId, message })
+          body: JSON.stringify({ sessionId, message }),
+          signal: abortControllerRef.current.signal
         })
 
         if (!response.ok) {
@@ -104,14 +109,28 @@ export function useChatStream() {
           }
         }
       } catch (error) {
-        console.error('Stream error:', error)
-        throw error
+        // Don't log abort errors as they're intentional
+        if (error instanceof Error && error.name === 'AbortError') {
+          console.log('Stream aborted by user')
+        } else {
+          console.error('Stream error:', error)
+          throw error
+        }
       } finally {
         setIsStreaming(false)
+        abortControllerRef.current = null
       }
     },
     [activeSessionId, addMessage, updateMessage, createSession, isStreaming, queryClient]
   )
 
-  return { startStream, isStreaming }
+  const stopStream = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+      setIsStreaming(false)
+    }
+  }, [])
+
+  return { startStream, stopStream, isStreaming }
 }
