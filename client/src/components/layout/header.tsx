@@ -14,26 +14,27 @@ export function Header() {
       <div className="flex items-center justify-between px-6 py-3">
         {/* Left: Logo + Project Name */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
-            <Brain className="w-6 h-6 text-primary" />
+          <div className="flex items-center justify-center w-10 h-10 rounded-lg border border-purple-500/30 bg-primary/10">
+            <Brain className="w-6 h-6 text-purple-300" />
           </div>
           <div className="flex flex-col">
-            <div className="flex items-baseline gap-2">
-              <span className="text-sm font-semibold tracking-wide text-foreground">
-                LLM-DASHBOARD
-              </span>
-              <span className="text-xs text-muted-foreground font-medium">
-                v1.2
-              </span>
-            </div>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-xs font-medium text-emerald-400 tracking-wide">
               EVALUATION ENGINE
             </span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-base font-bold tracking-wide text-white">
+                LLM-DASHBOARD
+              </span>
+              <span className="text-xs text-white font-medium">v1.0.0</span>
+            </div>
           </div>
         </div>
 
         {/* Middle: Navigation */}
-        <nav className="flex items-center gap-2 rounded-[19px] border border-[#1f2738] bg-[#0f1219] px-2" style={{ height: '38px' }}>
+        <nav
+          className="flex items-center gap-2 rounded-[19px] border border-[#1f2738] bg-[#0f1219] px-2"
+          style={{ height: '38px' }}
+        >
           {navItems.map((item) => {
             const Icon = item.icon
             return (
