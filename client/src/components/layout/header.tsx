@@ -33,7 +33,7 @@ export function Header() {
         </div>
 
         {/* Middle: Navigation */}
-        <nav className="flex items-center gap-1">
+        <nav className="flex items-center gap-2 rounded-[19px] border border-[#1f2738] bg-[#0f1219] px-2" style={{ height: '38px' }}>
           {navItems.map((item) => {
             const Icon = item.icon
             return (
@@ -42,10 +42,10 @@ export function Header() {
                 to={item.path}
                 className={cn(
                   'flex items-center gap-2 px-4 py-2 rounded-md',
-                  'text-sm font-medium transition-all duration-200',
-                  'hover:bg-accent hover:text-accent-foreground',
-                  'data-[status=active]:bg-primary data-[status=active]:text-primary-foreground',
-                  'data-[status=active]:shadow-sm'
+                  'text-sm font-normal transition-all duration-200',
+                  'text-[#97a2b9]',
+                  'hover:text-[#fafafd]',
+                  'data-[status=active]:bg-transparent data-[status=active]:text-[#fafafd] data-[status=active]:font-bold'
                 )}
               >
                 <Icon className="w-4 h-4" />
