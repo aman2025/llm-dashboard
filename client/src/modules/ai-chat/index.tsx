@@ -3,15 +3,19 @@ import { ChatPanel } from './components/ChatPanel'
 import { ChatInput } from './components/ChatInput'
 import { useChatStream } from './hooks/useChatStream'
 import { useChatStore } from '@/stores/chat-store'
+import { useSettings } from '@/modules/settings/hooks/use-settings'
 import { Brain } from 'lucide-react'
 
 export default function AiChatPage() {
   const { startStream } = useChatStream()
   const { activeSessionId } = useChatStore()
+  const { data: settings } = useSettings()
 
   const handleSend = async (message: string) => {
     await startStream(message)
   }
+
+  const activeLlmName = settings?.activeLlm?.name || 'No model selected'
 
   return (
     <div className="flex h-full justify-center p-5" style={{ background: 'linear-gradient(180deg, #0a0a1a 0%, #12101f 100%)' }}>
@@ -25,7 +29,12 @@ export default function AiChatPage() {
           {/* Top Header - 56px */}
           <div className="h-14 flex items-center gap-3 px-6 border-b border-[#1f2033]">
             <Brain className="w-5 h-5 text-indigo-400" />
-            <span className="text-sm font-medium text-foreground">Qwen MLX</span>
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-foreground">{activeLlmName}</span>
+              {settings?.activeLlm?.size && (
+                <span className="text-xs text-muted-foreground">{settings.activeLlm.size}</span>
+              )}
+            </div>
           </div>
 
           {/* Middle - Messages Area */}
