@@ -58,9 +58,9 @@ export const chatController = {
     }
   },
 
-  async streamChat(req: ChatStreamRequest, onEvent: (event: any) => void) {
+  async streamChat(req: ChatStreamRequest, onEvent: (event: any) => void, abortSignal?: AbortSignal) {
     try {
-      return await chatService.streamChat(req, onEvent)
+      return await chatService.streamChat(req, onEvent, abortSignal)
     } catch (error) {
       console.error('Error streaming chat:', error)
       throw error

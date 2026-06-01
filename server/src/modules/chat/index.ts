@@ -57,7 +57,7 @@ export const chatModule = new Elysia({ prefix: '/chat' })
   })
   .post(
     '/stream',
-    async ({ body, set }) => {
+    async ({ body, set, request }) => {
       set.headers = {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
@@ -70,6 +70,22 @@ export const chatModule = new Elysia({ prefix: '/chat' })
       const stream = new ReadableStream({
         async start(controller) {
           const encoder = new TextEncoder()
+          
+          // Create an AbortController to detect client disconnection
+          const abortController = new AbortController()
+          
+          // Monitor for client disconnection
+          const checkConnection = setInterval(() => {
+            try {
+              // Try to enqueue an empty comment to check if connection is alive
+              // If the client disconnected, this will throw
+              controller.enqueue(encoder.encode(': keepalive\n\n'))
+            } catch (err) {
+              console.log('Client disconnected')
+              clearInterval(checkConnection)
+              abortController.abort()
+            }
+          }, 1000)
 
           const sendEvent = (event: SSEEvent) => {
             try {
@@ -77,18 +93,34 @@ export const chatModule = new Elysia({ prefix: '/chat' })
               controller.enqueue(encoder.encode(`data: ${data}\n\n`))
             } catch (err) {
               console.error('Error sending SSE event:', err)
+              clearInterval(checkConnection)
+              abortController.abort()
             }
           }
 
           try {
-            await chatController.streamChat(body, sendEvent)
+            await chatController.streamChat(body, sendEvent, abortController.signal)
+            clearInterval(checkConnection)
             controller.close()
           } catch (err) {
+            clearInterval(checkConnection)
             console.error('Stream error:', err)
-            const errorMsg = err instanceof Error ? err.message : 'Stream error'
-            sendEvent({ error: errorMsg, done: true })
+            
+            // Only send error if not aborted
+            if (err instanceof Error && err.name !== 'AbortError') {
+              const errorMsg = err.message
+              try {
+                sendEvent({ error: errorMsg, done: true })
+              } catch {
+                // Ignore if can't send error (client disconnected)
+              }
+            }
             controller.close()
           }
+        },
+        cancel() {
+          // Called when client closes the connection
+          console.log('Stream cancelled by client')
         }
       })
 

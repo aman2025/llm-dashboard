@@ -70,7 +70,18 @@ export const chatService = {
     }
   },
 
-  async streamChat(req: ChatStreamRequest, onEvent: (event: SSEEvent) => void) {
+  async streamChat(req: ChatStreamRequest, onEvent: (event: SSEEvent) => void, abortSignal?: AbortSignal) {
+    // Create an AbortController for the LLM API request
+    const llmAbortController = new AbortController()
+    
+    // If client disconnects, abort the LLM request
+    if (abortSignal) {
+      abortSignal.addEventListener('abort', () => {
+        console.log('Client disconnected, aborting LLM request')
+        llmAbortController.abort()
+      })
+    }
+
     try {
       // 0. Get active model from settings
       const settings = await settingsService.getSettings()
@@ -115,7 +126,7 @@ export const chatService = {
         ...history.map((m) => ({ role: m.role, content: m.content }))
       ]
 
-      // 5. Stream from LLM API
+      // 5. Stream from LLM API with abort signal
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: {
@@ -126,7 +137,8 @@ export const chatService = {
           model: activeModel,
           messages: llmMessages,
           stream: true
-        })
+        }),
+        signal: llmAbortController.signal
       })
 
       if (!response.ok) {
@@ -220,6 +232,13 @@ export const chatService = {
 
       return { sessionId }
     } catch (error) {
+      // Handle abort errors gracefully
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('LLM request aborted by client disconnect')
+        // Don't save partial message or throw error
+        return { sessionId: req.sessionId || '' }
+      }
+      
       const errorMsg =
         error instanceof Error ? error.message : 'Unknown error occurred'
       console.error('Stream error:', errorMsg)
