@@ -41,7 +41,9 @@ export function ChatSidebar() {
   }
 
   return (
-    <div className="flex flex-col h-full p-4 border border-[#242a41] rounded-xl" style={{ width: '258px', backgroundColor: '#10162f' }}>
+    <div
+      className="flex flex-col h-full p-4 border border-[#242a41] rounded-xl scrollbar-thin"
+      style={{ width: '258px', backgroundColor: '#10162f' }}>
       <button
         onClick={handleNewChat}
         className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 transition-colors text-sm mb-4"
@@ -50,7 +52,7 @@ export function ChatSidebar() {
         New Chat
       </button>
 
-      <div className="flex-1 overflow-y-auto space-y-2">
+      <div className="flex-1 overflow-y-auto scrollbar-thin space-y-2">
         {sessions.map((session) => (
           <div
             key={session.id}

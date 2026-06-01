@@ -75,6 +75,18 @@
   .animation-delay-300 {
     animation-delay: 300ms;
   }
+
+  /* Custom scrollbar styles */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: #202559;
+    border-radius: 3px;
+  }
 }
 
 .dark {

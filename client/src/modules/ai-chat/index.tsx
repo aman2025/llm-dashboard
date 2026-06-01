@@ -42,7 +42,7 @@ export default function AiChatPage() {
           </div>
 
           {/* Middle - Messages Area */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto scrollbar-thin">
             <ChatPanel />
           </div>
 
