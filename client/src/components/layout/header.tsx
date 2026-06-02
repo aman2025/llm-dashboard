@@ -18,13 +18,9 @@ export function Header() {
             <Brain className="w-6 h-6 text-purple-300" />
           </div>
           <div className="flex flex-col">
-            <span className="text-xs font-medium text-emerald-400 tracking-wide">
-              EVALUATION ENGINE
-            </span>
+            <span className="text-xs font-medium text-emerald-400 tracking-wide">EVALUATION ENGINE</span>
             <div className="flex items-baseline gap-2">
-              <span className="text-base font-bold tracking-wide text-white">
-                LLM-DASHBOARD
-              </span>
+              <span className="text-base font-bold tracking-wide text-white">LLM-DASHBOARD</span>
               <span className="text-xs text-white font-medium">v1.0.0</span>
             </div>
           </div>
@@ -60,12 +56,8 @@ export function Header() {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted/50 border border-border">
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-xs font-medium text-muted-foreground">
-              VRAM Footprint:
-            </span>
-            <span className="text-xs font-semibold text-foreground">
-              2.2 GB
-            </span>
+            <span className="text-xs font-medium text-muted-foreground">VRAM Footprint:</span>
+            <span className="text-xs font-semibold text-foreground">2.2 GB</span>
           </div>
         </div>
       </div>

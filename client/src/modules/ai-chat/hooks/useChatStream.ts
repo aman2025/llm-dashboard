@@ -4,8 +4,7 @@ import { useChatStore } from '@/stores/chat-store'
 import { chatApi } from '../api/chat'
 
 export function useChatStream() {
-  const { addMessage, updateMessage, activeSessionId, createSession } =
-    useChatStore()
+  const { addMessage, updateMessage, activeSessionId, createSession } = useChatStore()
   const [isStreaming, setIsStreaming] = useState(false)
   const queryClient = useQueryClient()
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -122,14 +121,7 @@ export function useChatStream() {
         abortControllerRef.current = null
       }
     },
-    [
-      activeSessionId,
-      addMessage,
-      updateMessage,
-      createSession,
-      isStreaming,
-      queryClient
-    ]
+    [activeSessionId, addMessage, updateMessage, createSession, isStreaming, queryClient]
   )
 
   const stopStream = useCallback(() => {

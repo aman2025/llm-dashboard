@@ -21,8 +21,7 @@ interface ToastContextValue {
 
 const ToastContext = React.createContext<ToastContextValue | null>(null)
 
-const toastEventEmitter =
-  typeof window !== 'undefined' ? new EventTarget() : null
+const toastEventEmitter = typeof window !== 'undefined' ? new EventTarget() : null
 
 export function useToast() {
   const context = React.useContext(ToastContext)
@@ -36,13 +35,7 @@ export function emitToast(toast: Omit<ToastItem, 'id'>) {
   toastEventEmitter?.dispatchEvent(new CustomEvent('toast', { detail: toast }))
 }
 
-export function ToastProvider({
-  children,
-  className
-}: {
-  children: React.ReactNode
-  className?: string
-}) {
+export function ToastProvider({ children, className }: { children: React.ReactNode; className?: string }) {
   const [toasts, setToasts] = React.useState<ToastItem[]>([])
 
   React.useEffect(() => {
@@ -76,18 +69,9 @@ export function ToastProvider({
   return (
     <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
       {children}
-      <div
-        className={cn(
-          'fixed top-4 right-4 z-50 flex flex-col gap-2',
-          className
-        )}
-      >
+      <div className={cn('fixed top-4 right-4 z-50 flex flex-col gap-2', className)}>
         {toasts.map((toast) => (
-          <Toast
-            key={toast.id}
-            variant={toast.variant}
-            onClose={() => removeToast(toast.id)}
-          >
+          <Toast key={toast.id} variant={toast.variant} onClose={() => removeToast(toast.id)}>
             {toast.message}
           </Toast>
         ))}

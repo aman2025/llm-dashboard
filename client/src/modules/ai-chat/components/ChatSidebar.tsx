@@ -4,9 +4,7 @@ import { useChatSessions, useDeleteSession } from '../hooks/useChatSessions'
 import { useChatStore } from '@/stores/chat-store'
 import { useQueryClient } from '@tanstack/react-query'
 
-const BASE_URL = (
-  process.env.BUN_PUBLIC_BASE_URL || 'http://localhost:3002/api'
-).replace(/\/+$/, '')
+const BASE_URL = (process.env.BUN_PUBLIC_BASE_URL || 'http://localhost:3002/api').replace(/\/+$/, '')
 
 export function ChatSidebar() {
   const { data: sessions = [] } = useChatSessions()
@@ -67,9 +65,7 @@ export function ChatSidebar() {
                 : 'hover:bg-white/5 text-muted-foreground'
             )}
           >
-            <span className="flex-1 truncate">
-              {session.lastMessage || 'New chat'}
-            </span>
+            <span className="flex-1 truncate">{session.lastMessage || 'New chat'}</span>
             <button
               onClick={(e) => {
                 e.stopPropagation()

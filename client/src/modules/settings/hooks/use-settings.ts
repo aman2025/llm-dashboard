@@ -1,10 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { emitToast } from '@/components/ui/toaster'
-import {
-  settingsApi,
-  type Settings,
-  type LlmModel
-} from '@/api/endpoints/settings'
+import { settingsApi, type Settings, type LlmModel } from '@/api/endpoints/settings'
 import { ApiRequestError } from '@/api/axios'
 
 export const settingsKeys = {
@@ -38,16 +34,13 @@ export function useSetActiveLlm() {
       queryClient.setQueryData<Settings>(settingsKeys.detail(), newSettings)
 
       // Update LLM models cache to reflect active state
-      queryClient.setQueryData<LlmModel[]>(
-        settingsKeys.llmModels(),
-        (oldModels) => {
-          if (!oldModels) return oldModels
-          return oldModels.map((model) => ({
-            ...model,
-            isActive: model.id === newSettings.activeLlmId
-          }))
-        }
-      )
+      queryClient.setQueryData<LlmModel[]>(settingsKeys.llmModels(), (oldModels) => {
+        if (!oldModels) return oldModels
+        return oldModels.map((model) => ({
+          ...model,
+          isActive: model.id === newSettings.activeLlmId
+        }))
+      })
 
       emitToast({ message: 'Active model updated', variant: 'success' })
     },

@@ -39,13 +39,9 @@ export default function AiChatPage() {
           <div className="h-14 flex items-center gap-3 px-6 border-b border-[#1f2033]">
             <Brain className="w-5 h-5 text-indigo-400" />
             <div className="flex flex-col">
-              <span className="text-sm font-medium text-foreground">
-                {activeLlmName}
-              </span>
+              <span className="text-sm font-medium text-foreground">{activeLlmName}</span>
               {settings?.activeLlm?.size && (
-                <span className="text-xs text-muted-foreground">
-                  {settings.activeLlm.size}
-                </span>
+                <span className="text-xs text-muted-foreground">{settings.activeLlm.size}</span>
               )}
             </div>
           </div>

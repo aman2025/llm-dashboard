@@ -30,12 +30,7 @@ export class ApiRequestError extends Error {
   public code: ErrorCode
   public details: unknown
 
-  constructor(
-    message: string,
-    status: number,
-    code: ErrorCode = 'UNKNOWN_ERROR',
-    details?: unknown
-  ) {
+  constructor(message: string, status: number, code: ErrorCode = 'UNKNOWN_ERROR', details?: unknown) {
     super(message)
     this.name = 'ApiRequestError'
     this.status = status
@@ -46,9 +41,7 @@ export class ApiRequestError extends Error {
 
 // ==================== Axios Instance ====================
 
-const baseURL = (
-  process.env.BUN_PUBLIC_BASE_URL || 'http://localhost:3002/api'
-).replace(/\/+$/, '')
+const baseURL = (process.env.BUN_PUBLIC_BASE_URL || 'http://localhost:3002/api').replace(/\/+$/, '')
 
 export const apiClient = axios.create({
   baseURL,
@@ -81,11 +74,7 @@ apiClient.interceptors.response.use(
       return body.data
     }
     return Promise.reject(
-      new ApiRequestError(
-        'Unexpected response format',
-        response.status,
-        'FORMAT_ERROR'
-      )
+      new ApiRequestError('Unexpected response format', response.status, 'FORMAT_ERROR')
     )
   },
   // Error interceptor: wraps all errors as ApiRequestError
@@ -104,21 +93,15 @@ apiClient.interceptors.response.use(
 
     // Request timeout
     if (error.code === 'ECONNABORTED') {
-      return Promise.reject(
-        new ApiRequestError('Request timeout', 408, 'TIMEOUT')
-      )
+      return Promise.reject(new ApiRequestError('Request timeout', 408, 'TIMEOUT'))
     }
 
     // Network error (no response)
     if (!error.response) {
-      return Promise.reject(
-        new ApiRequestError('Network error', 0, 'NETWORK_ERROR')
-      )
+      return Promise.reject(new ApiRequestError('Network error', 0, 'NETWORK_ERROR'))
     }
 
     // Other HTTP errors
-    return Promise.reject(
-      new ApiRequestError(error.message, error.response.status, 'HTTP_ERROR')
-    )
+    return Promise.reject(new ApiRequestError(error.message, error.response.status, 'HTTP_ERROR'))
   }
 )

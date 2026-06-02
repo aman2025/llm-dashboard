@@ -25,6 +25,5 @@ export const settingsApi = {
   getAllLlmModels: () => apiClient.get<LlmModel[]>('/settings/llm-models'),
 
   /** Set active LLM model */
-  setActiveLlm: (llmId: string) =>
-    apiClient.patch<Settings>('/settings/active-llm', { llmId })
+  setActiveLlm: (llmId: string) => apiClient.patch<Settings>('/settings/active-llm', { llmId })
 }

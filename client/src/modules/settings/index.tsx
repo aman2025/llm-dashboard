@@ -47,9 +47,7 @@ export default function SettingsPage() {
               >
                 <Settings2 className="w-4 h-4" style={{ color: '#8463ff' }} />
               </div>
-              <span className="text-white font-semibold text-base">
-                Active model
-              </span>
+              <span className="text-white font-semibold text-base">Active model</span>
             </div>
             <button
               onClick={handleResetDefaults}
@@ -80,17 +78,13 @@ export default function SettingsPage() {
                   model.isActive ? 'ring-1 ring-purple-500/50' : ''
                 }`}
                 style={{
-                  backgroundColor: model.isActive
-                    ? 'rgba(30, 41, 58, 0.8)'
-                    : 'rgba(30, 41, 58, 0.5)',
+                  backgroundColor: model.isActive ? 'rgba(30, 41, 58, 0.8)' : 'rgba(30, 41, 58, 0.5)',
                   border: '1px solid rgba(148, 163, 184, 0.1)'
                 }}
               >
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <div className="text-white font-semibold text-lg mb-1">
-                      {model.name}
-                    </div>
+                    <div className="text-white font-semibold text-lg mb-1">{model.name}</div>
                     <div className="text-xs" style={{ color: '#64748b' }}>
                       {model.description}
                     </div>
@@ -118,10 +112,7 @@ export default function SettingsPage() {
                     )}
                   </div>
                 </div>
-                <div
-                  className="flex items-center gap-4 text-sm"
-                  style={{ color: '#94a3b8' }}
-                >
+                <div className="flex items-center gap-4 text-sm" style={{ color: '#94a3b8' }}>
                   <span className="flex items-center gap-2">
                     <span style={{ color: '#64748b' }}>type:</span>
                     <span className="text-white">{model.type}</span>
@@ -169,9 +160,7 @@ export default function SettingsPage() {
               >
                 <Settings2 className="w-4 h-4" style={{ color: '#22c55e' }} />
               </div>
-              <span className="text-white font-semibold text-base">
-                Toolcall definition
-              </span>
+              <span className="text-white font-semibold text-base">Toolcall definition</span>
             </div>
           </div>
 
@@ -198,9 +187,7 @@ export default function SettingsPage() {
                 }}
               >
                 <div>
-                  <div className="text-white font-medium text-sm mb-1">
-                    {item.tool}
-                  </div>
+                  <div className="text-white font-medium text-sm mb-1">{item.tool}</div>
                   <div className="text-xs" style={{ color: '#64748b' }}>
                     {item.desc}
                   </div>

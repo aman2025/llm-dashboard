@@ -1,6 +1,6 @@
 export default {
   tabWidth: 2,
-  printWidth: 80,
+  printWidth: 108,
   semi: false,
   useTabs: false,
   bracketSpacing: true,

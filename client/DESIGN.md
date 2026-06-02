@@ -189,10 +189,7 @@ Things to **avoid** in this codebase:
     style={{ backgroundColor: '#10162f', border: '1px solid #1e293a' }}
   >
     // 3. Panel header
-    <div
-      className="flex items-center justify-between p-5 border-b"
-      style={{ borderColor: '#1e293a' }}
-    >
+    <div className="flex items-center justify-between p-5 border-b" style={{ borderColor: '#1e293a' }}>
       <div className="flex items-center gap-3">
         <div
           className="w-8 h-8 rounded-lg flex items-center justify-center"

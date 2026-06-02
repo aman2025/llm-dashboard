@@ -30,8 +30,7 @@ export function ChatPanel() {
   }, [activeSessionId, apiMessages, sessions, loadSession])
 
   // Get messages directly from Zustand store for real-time updates
-  const messages =
-    sessions.find((s) => s.id === activeSessionId)?.messages || []
+  const messages = sessions.find((s) => s.id === activeSessionId)?.messages || []
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -49,18 +48,9 @@ export function ChatPanel() {
     <div className="flex-1 overflow-y-auto p-6 space-y-4">
       {messages.map((msg, index) => {
         // Last assistant message is streaming if currently streaming
-        const isLastAssistant =
-          msg.role === 'assistant' &&
-          index === messages.length - 1 &&
-          isStreaming
+        const isLastAssistant = msg.role === 'assistant' && index === messages.length - 1 && isStreaming
 
-        return (
-          <MessageBubble
-            key={msg.id}
-            message={msg}
-            isStreaming={isLastAssistant}
-          />
-        )
+        return <MessageBubble key={msg.id} message={msg} isStreaming={isLastAssistant} />
       })}
       <div ref={bottomRef} />
     </div>

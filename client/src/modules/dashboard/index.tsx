@@ -174,9 +174,7 @@ export default function DashboardPage() {
 
       {modelsResponse && (
         <Card className="p-4">
-          <h2 className="text-sm font-semibold mb-2">
-            GET /v1/models Response:
-          </h2>
+          <h2 className="text-sm font-semibold mb-2">GET /v1/models Response:</h2>
           <pre className="text-xs bg-muted p-2 rounded overflow-x-auto max-h-[200px] overflow-y-auto">
             {JSON.stringify(modelsResponse, null, 2)}
           </pre>
@@ -185,9 +183,7 @@ export default function DashboardPage() {
 
       {statsResponse && (
         <Card className="p-4">
-          <h2 className="text-sm font-semibold mb-2">
-            GET /api/status Response:
-          </h2>
+          <h2 className="text-sm font-semibold mb-2">GET /api/status Response:</h2>
           <pre className="text-xs bg-muted p-2 rounded overflow-x-auto max-h-[200px] overflow-y-auto">
             {JSON.stringify(statsResponse, null, 2)}
           </pre>
@@ -238,9 +234,7 @@ export default function DashboardPage() {
         <Card className="p-4">
           <div className="border rounded-lg p-4 min-h-[200px] max-h-[500px] overflow-y-auto bg-transparent">
             <div className="whitespace-pre-wrap">{response}</div>
-            {isStreaming && (
-              <span className="inline-block w-2 h-4 bg-gray-800 animate-pulse ml-1" />
-            )}
+            {isStreaming && <span className="inline-block w-2 h-4 bg-gray-800 animate-pulse ml-1" />}
           </div>
         </Card>
       )}

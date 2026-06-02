@@ -58,8 +58,7 @@ export const useChatStore = create<ChatState>()(
       deleteSession: (sessionId) => {
         set((state) => ({
           sessions: state.sessions.filter((s) => s.id !== sessionId),
-          activeSessionId:
-            state.activeSessionId === sessionId ? null : state.activeSessionId
+          activeSessionId: state.activeSessionId === sessionId ? null : state.activeSessionId
         }))
       },
 
@@ -83,9 +82,7 @@ export const useChatStore = create<ChatState>()(
             s.id === sessionId
               ? {
                   ...s,
-                  messages: s.messages.map((m) =>
-                    m.id === messageId ? { ...m, ...updates } : m
-                  ),
+                  messages: s.messages.map((m) => (m.id === messageId ? { ...m, ...updates } : m)),
                   updatedAt: new Date().toISOString()
                 }
               : s
@@ -97,9 +94,7 @@ export const useChatStore = create<ChatState>()(
 
       loadSession: (session) => {
         set((state) => {
-          const existingIndex = state.sessions.findIndex(
-            (s) => s.id === session.id
-          )
+          const existingIndex = state.sessions.findIndex((s) => s.id === session.id)
           if (existingIndex >= 0) {
             const newSessions = [...state.sessions]
             newSessions[existingIndex] = session

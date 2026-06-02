@@ -16,8 +16,7 @@ const Toast = React.forwardRef<HTMLDivElement, ToastProps>(
           'pointer-events-auto relative flex w-full items-center justify-between space-x-2 overflow-hidden rounded-md border p-4 pr-6 shadow-lg transition-all',
           'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-top-full data-[state=open]:slide-in-from-top-full',
           {
-            'border-green-200 bg-green-50 text-green-900':
-              variant === 'success',
+            'border-green-200 bg-green-50 text-green-900': variant === 'success',
             'border-red-200 bg-red-50 text-red-900': variant === 'error',
             'border-blue-200 bg-blue-50 text-blue-900': variant === 'info',
             'border-border bg-background text-foreground': variant === 'default'
