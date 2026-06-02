@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { chatApi, type SessionListItem, type ChatMessage } from '../api/chat'
+import { chatApi, type SessionListItem, type ChatMessage } from '../api'
 
 export function useChatSessions() {
   return useQuery<SessionListItem[]>({

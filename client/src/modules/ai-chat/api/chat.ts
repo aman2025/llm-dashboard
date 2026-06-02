@@ -1,20 +1,5 @@
 import { apiClient } from '@/api/axios'
-
-export interface ChatMessage {
-  id: string
-  role: 'user' | 'assistant'
-  content: string
-  reasoning?: string
-  createdAt: string
-}
-
-export interface SessionListItem {
-  id: string
-  createdAt: string
-  updatedAt: string
-  messageCount: number
-  lastMessage?: string
-}
+import type { ChatMessage, SessionListItem } from './chat.types'
 
 export const chatApi = {
   getSessions: async (): Promise<SessionListItem[]> => {

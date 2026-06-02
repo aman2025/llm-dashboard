@@ -1,7 +1,7 @@
 import { useCallback, useState, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useChatStore } from '@/stores/chat-store'
-import { chatApi } from '../api/chat'
+import { chatApi } from '../api'
 
 export function useChatStream() {
   const { addMessage, updateMessage, activeSessionId, createSession } = useChatStore()
