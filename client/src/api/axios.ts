@@ -46,7 +46,9 @@ export class ApiRequestError extends Error {
 
 // ==================== Axios Instance ====================
 
-const baseURL = (process.env.BUN_PUBLIC_BASE_URL || 'http://localhost:3002/api').replace(/\/+$/, '')
+const baseURL = (
+  process.env.BUN_PUBLIC_BASE_URL || 'http://localhost:3002/api'
+).replace(/\/+$/, '')
 
 export const apiClient = axios.create({
   baseURL,

@@ -21,28 +21,28 @@ Two layered systems live in [styles/globals.css](styles/globals.css). **Use the 
 
 ### Deep Space palette (authoritative for product UI)
 
-| Token | Value | Use |
-|---|---|---|
-| `--color-space-background` | `#0a0a1a` | Page background, gradient anchor |
-| `--color-space-sidebar` | `#16213e` | Left rail, navigation shell |
-| `--color-space-panel` | `#16213e` | Content panels (matches sidebar) |
-| `--color-space-input-bg` | `#1a1a2e` | Text inputs, form fields |
-| `--color-space-accent` | `#6061f5` | Primary action, active state, focus |
-| `--color-space-accent-glow` | `rgba(96, 97, 245, 0.3)` | Active ring, hover halo |
-| `--color-space-text` | `#e0e0e0` | Body copy |
-| `--color-space-muted` | `#6b7280` | Secondary copy, meta |
-| `--color-space-border` | `rgba(255, 255, 255, 0.03)` | Default dividers |
+| Token                       | Value                       | Use                                 |
+| --------------------------- | --------------------------- | ----------------------------------- |
+| `--color-space-background`  | `#0a0a1a`                   | Page background, gradient anchor    |
+| `--color-space-sidebar`     | `#16213e`                   | Left rail, navigation shell         |
+| `--color-space-panel`       | `#16213e`                   | Content panels (matches sidebar)    |
+| `--color-space-input-bg`    | `#1a1a2e`                   | Text inputs, form fields            |
+| `--color-space-accent`      | `#6061f5`                   | Primary action, active state, focus |
+| `--color-space-accent-glow` | `rgba(96, 97, 245, 0.3)`    | Active ring, hover halo             |
+| `--color-space-text`        | `#e0e0e0`                   | Body copy                           |
+| `--color-space-muted`       | `#6b7280`                   | Secondary copy, meta                |
+| `--color-space-border`      | `rgba(255, 255, 255, 0.03)` | Default dividers                    |
 
 ### Status colors (ad-hoc, not in CSS vars yet)
 
 These are repeated in inline styles across modules. Promote them to CSS variables when adding a third use site:
 
-| Role | Background | Text |
-|---|---|---|
-| Active / success | `rgba(34, 197, 94, 0.2)` | `#22c55e` |
-| Indigo / brand | `rgba(132, 99, 255, 0.2)` | `#8463ff` |
-| Neutral chip | `rgba(148, 163, 184, 0.1)` | `#94a3b8` |
-| Destructive | `bg-red-500/600` (Tailwind) | white |
+| Role             | Background                  | Text      |
+| ---------------- | --------------------------- | --------- |
+| Active / success | `rgba(34, 197, 94, 0.2)`    | `#22c55e` |
+| Indigo / brand   | `rgba(132, 99, 255, 0.2)`   | `#8463ff` |
+| Neutral chip     | `rgba(148, 163, 184, 0.1)`  | `#94a3b8` |
+| Destructive      | `bg-red-500/600` (Tailwind) | white     |
 
 ### Border colors used inline (not in vars)
 
@@ -76,14 +76,14 @@ The dashboard uses the page background default. **Reuse the vertical gradient on
 
 Sizes in use:
 
-| Use | Class | Pixels |
-|---|---|---|
-| Page title (rare) | `text-2xl font-bold` | 24 |
-| Panel header | `text-base font-semibold` | 16 |
-| Card title | `text-lg font-semibold` | 18 |
-| Body | `text-sm` | 14 |
-| Meta / micro | `text-xs` | 12 |
-| Reasoning / code | `font-mono text-xs` | 12 |
+| Use               | Class                     | Pixels |
+| ----------------- | ------------------------- | ------ |
+| Page title (rare) | `text-2xl font-bold`      | 24     |
+| Panel header      | `text-base font-semibold` | 16     |
+| Card title        | `text-lg font-semibold`   | 18     |
+| Body              | `text-sm`                 | 14     |
+| Meta / micro      | `text-xs`                 | 12     |
+| Reasoning / code  | `font-mono text-xs`       | 12     |
 
 Tracking: headers use `tracking-wide` or `tracking-tight` deliberately. Body uses default tracking.
 
@@ -189,19 +189,22 @@ Things to **avoid** in this codebase:
     style={{ backgroundColor: '#10162f', border: '1px solid #1e293a' }}
   >
     // 3. Panel header
-    <div className="flex items-center justify-between p-5 border-b" style={{ borderColor: '#1e293a' }}>
+    <div
+      className="flex items-center justify-between p-5 border-b"
+      style={{ borderColor: '#1e293a' }}
+    >
       <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-             style={{ backgroundColor: 'rgba(132, 99, 255, 0.2)' }}>
+        <div
+          className="w-8 h-8 rounded-lg flex items-center justify-center"
+          style={{ backgroundColor: 'rgba(132, 99, 255, 0.2)' }}
+        >
           <Settings2 className="w-4 h-4" style={{ color: '#8463ff' }} />
         </div>
         <span className="text-white font-semibold text-base">Panel title</span>
       </div>
     </div>
     // 4. Content
-    <div className="flex-1 p-5 overflow-auto space-y-4">
-      {/* ... */}
-    </div>
+    <div className="flex-1 p-5 overflow-auto space-y-4">{/* ... */}</div>
   </div>
 </div>
 ```

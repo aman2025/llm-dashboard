@@ -36,7 +36,7 @@ export function useSetActiveLlm() {
     onSuccess: (newSettings) => {
       // Update settings cache
       queryClient.setQueryData<Settings>(settingsKeys.detail(), newSettings)
-      
+
       // Update LLM models cache to reflect active state
       queryClient.setQueryData<LlmModel[]>(
         settingsKeys.llmModels(),
@@ -48,7 +48,7 @@ export function useSetActiveLlm() {
           }))
         }
       )
-      
+
       emitToast({ message: 'Active model updated', variant: 'success' })
     },
     onError: (error) => {

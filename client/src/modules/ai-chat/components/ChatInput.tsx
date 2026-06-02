@@ -9,14 +9,20 @@ interface ChatInputProps {
   isStreaming?: boolean
 }
 
-export function ChatInput({ onSend, onStop, disabled, isStreaming }: ChatInputProps) {
+export function ChatInput({
+  onSend,
+  onStop,
+  disabled,
+  isStreaming
+}: ChatInputProps) {
   const [value, setValue] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
-      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px'
+      textareaRef.current.style.height =
+        Math.min(textareaRef.current.scrollHeight, 120) + 'px'
     }
   }, [value])
 

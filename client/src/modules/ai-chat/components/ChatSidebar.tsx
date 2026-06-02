@@ -4,7 +4,9 @@ import { useChatSessions, useDeleteSession } from '../hooks/useChatSessions'
 import { useChatStore } from '@/stores/chat-store'
 import { useQueryClient } from '@tanstack/react-query'
 
-const BASE_URL = (process.env.BUN_PUBLIC_BASE_URL || 'http://localhost:3002/api').replace(/\/+$/, '')
+const BASE_URL = (
+  process.env.BUN_PUBLIC_BASE_URL || 'http://localhost:3002/api'
+).replace(/\/+$/, '')
 
 export function ChatSidebar() {
   const { data: sessions = [] } = useChatSessions()
@@ -21,7 +23,7 @@ export function ChatSidebar() {
       const json = await res.json()
       if (json.success && json.data?.id) {
         const sessionId = json.data.id
-        
+
         // Create session in Zustand store with server's ID for real-time updates
         const { loadSession } = useChatStore.getState()
         loadSession({
@@ -31,7 +33,7 @@ export function ChatSidebar() {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         })
-        
+
         setActiveSession(sessionId)
         queryClient.invalidateQueries({ queryKey: ['chat-sessions'] })
       }
@@ -43,7 +45,8 @@ export function ChatSidebar() {
   return (
     <div
       className="flex flex-col h-full p-4 border border-[#242a41] rounded-xl scrollbar-thin"
-      style={{ width: '258px', backgroundColor: '#10162f' }}>
+      style={{ width: '258px', backgroundColor: '#10162f' }}
+    >
       <button
         onClick={handleNewChat}
         className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 transition-colors text-sm mb-4"
@@ -64,7 +67,9 @@ export function ChatSidebar() {
                 : 'hover:bg-white/5 text-muted-foreground'
             )}
           >
-            <span className="flex-1 truncate">{session.lastMessage || 'New chat'}</span>
+            <span className="flex-1 truncate">
+              {session.lastMessage || 'New chat'}
+            </span>
             <button
               onClick={(e) => {
                 e.stopPropagation()

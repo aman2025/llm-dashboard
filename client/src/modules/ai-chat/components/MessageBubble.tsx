@@ -8,7 +8,10 @@ interface MessageBubbleProps {
   isStreaming?: boolean
 }
 
-export function MessageBubble({ message, isStreaming = false }: MessageBubbleProps) {
+export function MessageBubble({
+  message,
+  isStreaming = false
+}: MessageBubbleProps) {
   const isUser = message.role === 'user'
 
   return (
@@ -22,9 +25,17 @@ export function MessageBubble({ message, isStreaming = false }: MessageBubblePro
         )}
       >
         {!isUser && message.reasoning && (
-          <ReasonBlock reasoning={message.reasoning} isStreaming={isStreaming} />
+          <ReasonBlock
+            reasoning={message.reasoning}
+            isStreaming={isStreaming}
+          />
         )}
-        <div className={clsx('whitespace-pre-wrap text-sm', !isUser && message.reasoning && 'mt-2')}>
+        <div
+          className={clsx(
+            'whitespace-pre-wrap text-sm',
+            !isUser && message.reasoning && 'mt-2'
+          )}
+        >
           {message.content}
           {isStreaming && !message.content && (
             <Loader2 className="inline-block w-4 h-4 text-indigo-400 animate-spin ml-1" />
