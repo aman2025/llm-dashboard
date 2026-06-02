@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { emitToast } from '@/components/ui/toaster'
-import { settingsApi, type Settings, type LlmModel } from '@/modules/settings/api/settings'
+import { settingsApi, type Settings, type LlmModel } from '@/modules/settings/api'
 import { ApiRequestError } from '@/api/axios'
 
 export const settingsKeys = {

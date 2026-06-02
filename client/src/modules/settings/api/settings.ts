@@ -1,21 +1,5 @@
 import { apiClient } from '@/api/axios'
-
-export interface LlmModel {
-  id: string
-  name: string
-  size: string
-  type: string
-  description: string
-  fileSize: string
-  quantization: string
-  contextWindow: string
-  isActive: boolean
-}
-
-export interface Settings {
-  activeLlmId: string | null
-  activeLlm: LlmModel | null
-}
+import type { LlmModel, Settings } from './settings.types'
 
 export const settingsApi = {
   /** Get settings */

@@ -1,5 +1,5 @@
 ---
-description: Run format and commit the changes
+description: Stage all files and commit the changes
 ---
 
-Run `format` on the project. Then run `git diff` to see changes, stage all files, and commit.
+Run `git diff` to see changes, stage all files, and commit.
