@@ -64,7 +64,7 @@ Per-feature query hooks live in `modules/<feature>/hooks/` and define local quer
 ### API layer
 
 - [src/api/axios.ts](src/api/axios.ts) — single `apiClient` (axios instance) with a unified response interceptor that **unwraps** `{ success: true, data }` envelopes and **rejects** with `ApiRequestError`. All errors are normalized to one of: `BUSINESS_ERROR` (server said `success: false`), `TIMEOUT`, `NETWORK_ERROR`, `HTTP_ERROR`, `FORMAT_ERROR`, `UNKNOWN_ERROR`. The request interceptor has a commented-out bearer token slot — leave it that way until auth is added.
-- [src/api/endpoints/](src/api/endpoints/) — endpoint objects (e.g. `settingsApi.get`, `setActiveLlm`) that call `apiClient.get/patch/delete`. Endpoint types live next to the endpoints.
+- **Endpoint functions are co-located with their module** at `src/modules/<feature>/api/<endpoint>.ts` — e.g. `chatApi` in [src/modules/ai-chat/api/chat.ts](src/modules/ai-chat/api/chat.ts), `settingsApi` in [src/modules/settings/api/settings.ts](src/modules/settings/api/settings.ts). They call `apiClient` from `@/api/axios` and own the request/response types they return. `src/api/` is reserved for shared infrastructure (the axios client and its error normalization) — no endpoint files live there.
 - Streaming is **not** done via axios — chat uses raw `fetch` + `ReadableStream` (see below).
 
 ### SSE streaming
@@ -97,7 +97,7 @@ See [DESIGN.md](DESIGN.md) for the full UI design guidelines — aesthetic direc
 ## Adding a new feature module
 
 1. Create `src/modules/<name>/` with `api/`, `components/`, `hooks/`, `index.tsx` (default-exporting the page).
-2. Add endpoints under `src/api/endpoints/<name>.ts` using `apiClient`.
+2. Add endpoints under `src/modules/<name>/api/<endpoint>.ts` using `apiClient` from `@/api/axios`. Do **not** add files to `src/api/endpoints/` — that directory does not exist; endpoints are co-located with the module.
 3. Define a query key factory and `useX` / `useXMutation` hooks in `modules/<name>/hooks/`.
 4. Register the route in [src/routes/router.tsx](src/routes/router.tsx).
 5. Add a nav entry in [src/components/layout/header.tsx](src/components/layout/header.tsx) `navItems`.
