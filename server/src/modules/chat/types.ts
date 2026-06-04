@@ -33,10 +33,40 @@ export interface LLMMessage {
 }
 
 export interface LLMStreamChunk {
+  id?: string
+  model?: string
+  created?: number
   choices?: Array<{
     delta?: {
+      role?: string
       content?: string
       reasoning_content?: string
     }
+    finish_reason?: string | null
   }>
+  usage?: {
+    prompt_tokens?: number
+    completion_tokens?: number
+    total_tokens?: number
+  }
+}
+
+export interface LLMResponseSummary {
+  id?: string
+  model?: string
+  created?: number
+  choices: Array<{
+    index: number
+    message: {
+      role: string
+      content: string
+      reasoning_content?: string
+    }
+    finish_reason: string | null
+  }>
+  usage?: {
+    prompt_tokens?: number
+    completion_tokens?: number
+    total_tokens?: number
+  }
 }

@@ -4,7 +4,8 @@ import type {
   ChatStreamRequest,
   SSEEvent,
   LLMMessage,
-  LLMStreamChunk
+  LLMStreamChunk,
+  LLMResponseSummary
 } from './types'
 
 const API_URL = 'http://192.168.2.8:8000/v1/chat/completions'
@@ -126,18 +127,28 @@ export const chatService = {
         ...history.map((m) => ({ role: m.role, content: m.content }))
       ]
 
-      // 5. Stream from LLM API with abort signal
+      // 5. Build request payload and log it
+      const requestPayload = {
+        model: activeModel,
+        messages: llmMessages,
+        stream: true,
+        stream_options: { include_usage: true }
+      }
+
+      console.log('\n=== LLM REQUEST ===')
+      console.log('Session:', sessionId)
+      console.log('Request payload:')
+      console.log(JSON.stringify(requestPayload, null, 2))
+      console.log('==================\n')
+
+      // 6. Stream from LLM API with abort signal
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${API_KEY}`
         },
-        body: JSON.stringify({
-          model: activeModel,
-          messages: llmMessages,
-          stream: true
-        }),
+        body: JSON.stringify(requestPayload),
         signal: llmAbortController.signal
       })
 
@@ -155,11 +166,11 @@ export const chatService = {
       let buffer = ''
       let fullContent = ''
       let reasoningContent = ''
-      let chunkCount = 0
-
-      console.log('\n=== LLM STREAM START ===')
-      console.log('Model:', activeModel)
-      console.log('Session:', sessionId)
+      let responseId: string | undefined
+      let responseModel: string | undefined
+      let responseCreated: number | undefined
+      let finishReason: string | null = null
+      let usage: LLMStreamChunk['usage']
 
       while (true) {
         const { done, value } = await reader.read()
@@ -177,17 +188,23 @@ export const chatService = {
           try {
             const parsed: LLMStreamChunk = JSON.parse(data)
 
-            // Log the full parsed chunk structure
-            chunkCount++
-            console.log(`\n--- Chunk ${chunkCount} ---`)
-            console.log('Full parsed object:', JSON.stringify(parsed, null, 2))
+            responseId = parsed.id ?? responseId
+            responseModel = parsed.model ?? responseModel
+            responseCreated = parsed.created ?? responseCreated
 
-            const delta = parsed.choices?.[0]?.delta
+            const choice = parsed.choices?.[0]
+            const delta = choice?.delta
+
+            if (choice?.finish_reason) {
+              finishReason = choice.finish_reason
+            }
+            if (parsed.usage) {
+              usage = parsed.usage
+            }
 
             // Handle regular content
             const content = delta?.content
             if (content) {
-              console.log('Content delta:', JSON.stringify(content))
               fullContent += content
               onEvent({ content })
             }
@@ -195,7 +212,6 @@ export const chatService = {
             // Handle reasoning_content field (MLX-Qwen format)
             const reasoning = delta?.reasoning_content
             if (reasoning) {
-              console.log('Reasoning delta:', JSON.stringify(reasoning))
               reasoningContent += reasoning
               // Stream reasoning updates to frontend
               onEvent({ reasoning: reasoningContent })
@@ -207,12 +223,30 @@ export const chatService = {
         }
       }
 
-      console.log('\n=== LLM STREAM END ===')
-      console.log('Total chunks:', chunkCount)
-      console.log('Full content length:', fullContent.length)
-      console.log('Full content:', fullContent)
-      console.log('Reasoning content:', reasoningContent || '(none detected)')
-      console.log('========================\n')
+      // 7. Build final aggregated response and log it
+      const finalResponse: LLMResponseSummary = {
+        id: responseId,
+        model: responseModel,
+        created: responseCreated,
+        choices: [
+          {
+            index: 0,
+            message: {
+              role: 'assistant',
+              content: fullContent,
+              reasoning_content: reasoningContent || undefined
+            },
+            finish_reason: finishReason
+          }
+        ],
+        usage
+      }
+
+      console.log('\n=== LLM RESPONSE ===')
+      console.log('Session:', sessionId)
+      console.log('Response:')
+      console.log(JSON.stringify(finalResponse, null, 2))
+      console.log('===================\n')
 
       // 6. Store assistant message
       await prisma.chatMessage.create({
