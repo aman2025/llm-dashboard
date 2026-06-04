@@ -2,4 +2,4 @@
 description: Stage all files and commit the changes
 ---
 
-Dispatch the `commit-protocol` subagent via the Agent tool. Pass the user's original intent verbatim as the task prompt; if the user provided context after `/cmt`, include it. If the subagent reports "nothing to commit", relay that to the user and stop.
+Stage all files with `git add -A` and commit. If the user provided context after `/cmt`, use it verbatim as the commit message. Otherwise, derive a concise commit message (Chinese, `scope: 描述` style) from the current session history — summarize what was implemented or changed in this conversation. Do not dispatch a subagent, and do not run `git status`, `git diff`, `git log`, format, or lint.
