@@ -1,243 +1,322 @@
-import { useState, useRef, useEffect } from 'react'
-import axios from 'axios'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { useToast } from '@/components/ui/toaster'
-import { Card } from '@/components/ui/card'
-
-const API_BASE = 'http://192.168.2.8:8000'
-const API_URL = `${API_BASE}/v1/chat/completions`
-const API_KEY = 'zr425899'
-const MODEL = 'MLX-Qwen3.5-9B-Claude-4.6-Opus-6bit'
-
-interface Model {
-  id: string
-  object: string
-  created: number
-  owned_by: string
-}
+import {
+  Gauge,
+  Cpu,
+  Activity,
+  Thermometer,
+  Server,
+  HardDrive,
+  Database,
+  TrendingUp,
+  Zap,
+  Clock
+} from 'lucide-react'
 
 export default function DashboardPage() {
-  const { addToast } = useToast()
-  const [input, setInput] = useState('')
-  const [response, setResponse] = useState('')
-  const [isStreaming, setIsStreaming] = useState(false)
-  const [models, setModels] = useState<Model[]>([])
-  const [selectedModel, setSelectedModel] = useState(MODEL)
-  const [isLoadingModels, setIsLoadingModels] = useState(true)
-  const [modelsResponse, setModelsResponse] = useState<any>(null)
-  const [statsResponse, setStatsResponse] = useState<any>(null)
-  const abortControllerRef = useRef<AbortController | null>(null)
-
-  useEffect(() => {
-    const fetchAll = async () => {
-      const headers = { Authorization: `Bearer ${API_KEY}` }
-
-      try {
-        const modelsRes = await axios.get(`${API_BASE}/v1/models`, { headers })
-        setModels(modelsRes.data.data || [])
-        setModelsResponse(modelsRes.data)
-      } catch (err) {
-        console.error('Failed to fetch models:', err)
-      }
-
-      try {
-        const statsRes = await axios.get(`${API_BASE}/api/status`, { headers })
-        setStatsResponse(statsRes.data)
-      } catch (err) {
-        console.warn('/api/status not available:', err)
-      }
-
-      setIsLoadingModels(false)
-    }
-    fetchAll()
-  }, [])
-
-  const testLLM = async () => {
-    if (!input.trim()) {
-      addToast({
-        message: 'Please enter a message',
-        variant: 'error'
-      })
-      return
-    }
-
-    setIsStreaming(true)
-    setResponse('')
-    abortControllerRef.current = new AbortController()
-
-    try {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${API_KEY}`
-        },
-        body: JSON.stringify({
-          model: selectedModel,
-          messages: [{ role: 'user', content: input }],
-          stream: true
-        }),
-        signal: abortControllerRef.current.signal
-      })
-
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`)
-      }
-
-      const reader = res.body?.getReader()
-      const decoder = new TextDecoder()
-
-      if (!reader) {
-        throw new Error('No reader available')
-      }
-
-      let buffer = ''
-      let parsedData: any = null
-
-      while (true) {
-        const { done, value } = await reader.read()
-
-        if (done) break
-
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
-        buffer = lines.pop() || ''
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6).trim()
-
-            if (data === '[DONE]') continue
-
-            try {
-              const parsed = JSON.parse(data)
-              parsedData = parsed
-              const content = parsed.choices?.[0]?.delta?.content
-
-              if (content) {
-                setResponse((prev) => prev + content)
-              }
-            } catch (e) {
-              console.error('Failed to parse SSE data:', e)
-            }
-          }
-        }
-      }
-
-      console.log('LLM Response:', parsedData)
-
-      addToast({
-        message: 'LLM response completed',
-        variant: 'success'
-      })
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
-        addToast({
-          message: 'Request cancelled',
-          variant: 'info'
-        })
-      } else {
-        console.error('LLM test error:', error)
-        addToast({
-          message: `Error: ${error.message}`,
-          variant: 'error'
-        })
-      }
-    } finally {
-      setIsStreaming(false)
-      abortControllerRef.current = null
-    }
-  }
-
-  const stopStreaming = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort()
-    }
-  }
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey && !isStreaming) {
-      e.preventDefault()
-      testLLM()
-    }
-  }
-
   return (
-    <div className="flex flex-col h-full p-6 gap-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold">LLM Connection Test</h1>
-        <p className="text-sm text-gray-600">
-          Testing connection to {selectedModel} at {API_URL}
-        </p>
-      </div>
-
-      {modelsResponse && (
-        <Card className="p-4">
-          <h2 className="text-sm font-semibold mb-2">GET /v1/models Response:</h2>
-          <pre className="text-xs bg-muted p-2 rounded overflow-x-auto max-h-[200px] overflow-y-auto">
-            {JSON.stringify(modelsResponse, null, 2)}
-          </pre>
-        </Card>
-      )}
-
-      {statsResponse && (
-        <Card className="p-4">
-          <h2 className="text-sm font-semibold mb-2">GET /api/status Response:</h2>
-          <pre className="text-xs bg-muted p-2 rounded overflow-x-auto max-h-[200px] overflow-y-auto">
-            {JSON.stringify(statsResponse, null, 2)}
-          </pre>
-        </Card>
-      )}
-
-      <Card className="p-4 flex flex-col gap-4">
-        <div className="flex gap-2 items-center">
-          <span className="text-sm whitespace-nowrap">Model:</span>
-          <select
-            value={selectedModel}
-            onChange={(e) => setSelectedModel(e.target.value)}
-            className="flex-1 px-3 py-2 border rounded-md bg-background"
-            disabled={isLoadingModels}
-          >
-            {isLoadingModels ? (
-              <option>Loading models...</option>
-            ) : (
-              models.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.id}
-                </option>
-              ))
-            )}
-          </select>
-        </div>
-
-        <div className="flex gap-2">
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Enter your message..."
-            disabled={isStreaming}
-            className="flex-1"
-          />
-          {isStreaming ? (
-            <Button onClick={stopStreaming} variant="destructive">
-              Stop
-            </Button>
-          ) : (
-            <Button onClick={testLLM}>Send</Button>
-          )}
-        </div>
-      </Card>
-
-      {(response || isStreaming) && (
-        <Card className="p-4">
-          <div className="border rounded-lg p-4 min-h-[200px] max-h-[500px] overflow-y-auto bg-transparent">
-            <div className="whitespace-pre-wrap">{response}</div>
-            {isStreaming && <span className="inline-block w-2 h-4 bg-gray-800 animate-pulse ml-1" />}
+    <div className="space-y-8 p-6 text-slate-100 max-w-[1232px] mx-auto">
+      {/* ==================== MACMON SECTION ==================== */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="flex items-center gap-2.5">
+            <Gauge className="w-5 h-5 text-indigo-400" />
+            <h2 className="text-sm uppercase tracking-wider font-mono font-bold text-slate-200 flex items-center gap-2">
+              Macmon macOS System Telemetry
+              <span className="text-[10px] font-medium text-slate-400 bg-slate-950/80 border border-slate-800 px-2 py-0.5 rounded flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full" />
+                Offline Simulated M5
+              </span>
+            </h2>
           </div>
-        </Card>
-      )}
+          <span className="text-[10px] font-mono text-indigo-400 bg-indigo-500/5 px-2.5 py-1 rounded border border-indigo-500/15">
+            Sampling Time &nbsp; 2026-06-05 02:00:46
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Card 1: Silicon Engine Loads */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                  Silicon Engine Loads
+                </span>
+                <h3 className="text-sm font-bold text-white font-mono">CPU / GPU / Memory</h3>
+              </div>
+              <Activity className="w-4 h-4 text-indigo-400" />
+            </div>
+
+            <div className="space-y-3 font-mono text-xs">
+              <div>
+                <div className="flex justify-between mb-1 text-[11px]">
+                  <span className="text-slate-400">CPU Usage:</span>
+                  <span className="text-slate-200 font-bold">14.5%</span>
+                </div>
+                <div className="h-1.5 bg-slate-950 rounded-full overflow-hidden">
+                  <div className="h-full bg-indigo-500" style={{ width: '14.5%' }} />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between mb-1 text-[11px]">
+                  <span className="text-slate-400">GPU Usage:</span>
+                  <span className="text-indigo-400 font-bold">98.7%</span>
+                </div>
+                <div className="h-1.5 bg-slate-950 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-indigo-500 to-indigo-400"
+                    style={{ width: '98.7%' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between mb-1 text-[11px]">
+                  <span className="text-slate-400">Unified Memory:</span>
+                  <span className="text-emerald-400 font-bold text-[11px]">10.47 / 16 GB</span>
+                </div>
+                <div className="h-1.5 bg-slate-950 rounded-full overflow-hidden">
+                  <div className="h-full bg-emerald-500" style={{ width: '65.4%' }} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 2: SoC Hardware */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                  Silicon Specifications
+                </span>
+                <h3 className="text-sm font-bold text-white font-mono">SoC Hardware</h3>
+              </div>
+              <Cpu className="w-4 h-4 text-indigo-400" />
+            </div>
+
+            <div className="space-y-2.5 font-mono text-xs text-slate-300">
+              <div className="flex justify-between items-center bg-slate-950/40 px-3 py-2 rounded-lg border border-slate-800/60">
+                <span className="text-slate-400 text-[11px]">Chip Model:</span>
+                <span className="text-white font-bold">Apple M5</span>
+              </div>
+              <div className="flex justify-between items-center bg-slate-950/40 px-3 py-2 rounded-lg border border-slate-800/60">
+                <span className="text-slate-400 text-[11px]">P-Core Count:</span>
+                <span className="text-indigo-400 font-bold">4 Cores</span>
+              </div>
+              <div className="flex justify-between items-center bg-slate-950/40 px-3 py-2 rounded-lg border border-slate-800/60">
+                <span className="text-slate-400 text-[11px]">E-Core Count:</span>
+                <span className="text-slate-200 font-bold">6 Cores</span>
+              </div>
+              <div className="flex justify-between items-center bg-slate-950/40 px-3 py-2 rounded-lg border border-slate-800/60">
+                <span className="text-slate-400 text-[11px]">GPU Core Count:</span>
+                <span className="text-emerald-400 font-bold">10 Cores</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3: SoC Heat & Power Draw */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                  Thermals & Consumption
+                </span>
+                <h3 className="text-sm font-bold text-white font-mono">SoC Heat & Power Draw</h3>
+              </div>
+              <Thermometer className="w-4 h-4 text-emerald-400" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 font-mono text-xs">
+              <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/60">
+                <span className="text-[10px] text-slate-500 block">CPU Temp:</span>
+                <span className="text-sm font-bold text-slate-200 mt-0.5 block">69.1°C</span>
+              </div>
+              <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/60">
+                <span className="text-[10px] text-slate-500 block">GPU Temp:</span>
+                <span className="text-sm font-bold text-indigo-300 mt-0.5 block">82°C</span>
+              </div>
+            </div>
+
+            <div className="font-mono text-xs pt-3 border-t border-slate-800/60 space-y-2">
+              <div className="flex justify-between items-center text-xs text-white pb-1 border-b border-slate-950/40">
+                <span className="font-sans font-semibold text-slate-400">Silicon Power Draw:</span>
+                <span className="font-mono font-extrabold text-indigo-400">28.45 Watts</span>
+              </div>
+
+              <div className="flex justify-between text-[11px] text-slate-500">
+                <span>↳ CPU Core Power:</span>
+                <span className="text-slate-400 font-bold">1.97W</span>
+              </div>
+              <div className="flex justify-between text-[11px] text-slate-500">
+                <span>↳ GPU Core Power:</span>
+                <span className="text-indigo-300 font-bold">12.41W</span>
+              </div>
+              <div className="flex justify-between text-[11px] text-slate-500">
+                <span>↳ RAM Bus Power:</span>
+                <span className="text-emerald-400 font-bold">1.74W</span>
+              </div>
+              <div className="flex justify-between text-[11px] text-slate-500 pt-1.5 border-t border-slate-950/40 font-semibold">
+                <span>↳ SoC All Power:</span>
+                <span className="text-indigo-400 font-bold">14.39W</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ==================== OMLX SERVER SECTION ==================== */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="flex items-center gap-2.5">
+            <Server className="w-5 h-5 text-indigo-400" />
+            <h2 className="text-sm uppercase tracking-wider font-mono font-bold text-slate-200">
+              Omlx Server Telemetry{' '}
+              <span className="text-slate-500 font-mono font-normal lowercase">(host statistics only)</span>
+            </h2>
+          </div>
+          <span className="text-[10px] font-mono text-indigo-500 bg-indigo-500/5 px-2.5 py-1 rounded border border-indigo-500/10">
+            Node-Level State
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Col 1: Omlx-Daemon */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col justify-between space-y-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">
+                  Host Engine
+                </span>
+                <span className="text-lg font-extrabold text-white font-mono">Omlx-Daemon</span>
+              </div>
+              <div className="bg-indigo-500/10 p-2 text-indigo-400 rounded-lg border border-indigo-500/20">
+                <Cpu className="w-5 h-5" />
+              </div>
+            </div>
+
+            <div className="space-y-2 text-xs border-y border-slate-800/60 py-3 font-mono">
+              <div className="flex justify-between">
+                <span className="text-slate-400">Uptime:</span>
+                <span className="text-indigo-400 font-bold flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5" />
+                  1h 51m 12s
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Active Model:</span>
+                <span className="text-indigo-300 font-semibold truncate max-w-[200px]">
+                  &quot;qwen3.5 4b 4bit&quot;
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">All Models:</span>
+                <span className="text-slate-200 font-semibold text-right max-w-[180px] truncate">
+                  qwen3.5 4b 4bit, qwen3...
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Models Loaded:</span>
+                <span className="text-emerald-400 font-bold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />2 in memory
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Models Loading:</span>
+                <span className="text-slate-200">0 loading</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Col 2: VRAM Memory */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col justify-between space-y-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">
+                  Host Allocation
+                </span>
+                <span className="text-lg font-extrabold text-white">VRAM Memory</span>
+              </div>
+              <div className="bg-amber-500/10 p-2 text-amber-400 rounded-lg border border-amber-500/20">
+                <HardDrive className="w-5 h-5" />
+              </div>
+            </div>
+
+            <div className="space-y-3.5 py-2 font-mono">
+              <div>
+                <div className="flex justify-between items-center text-xs mb-1">
+                  <span className="text-slate-400">Model Usage bytes:</span>
+                  <span className="text-amber-400 font-bold">2.80GB</span>
+                </div>
+                <div className="h-2.5 w-full bg-slate-950 rounded-full border border-slate-800/60 overflow-hidden p-0.5">
+                  <div
+                    className="h-full bg-gradient-to-r from-amber-500 to-indigo-500 rounded-full"
+                    style={{ width: '17.5%' }}
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-between text-[11px] text-slate-400 pt-1.5 border-t border-slate-800/50">
+                <span>Memory Capacity:</span>
+                <span className="text-slate-300">16.00GB</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom metric cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-slate-900/40 border border-slate-800/60 p-4 rounded-xl flex items-center gap-3.5">
+            <div className="p-2.5 bg-indigo-500/5 text-indigo-400 border border-indigo-500/10 rounded-lg">
+              <Database className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-[9px] uppercase tracking-wider font-mono text-slate-400">
+                Total Input Tokens
+              </div>
+              <div className="text-base font-extrabold font-mono text-slate-100">78</div>
+              <div className="text-[10px] text-indigo-400 font-mono">In-flight cache mapping</div>
+            </div>
+          </div>
+
+          <div className="bg-slate-900/40 border border-slate-800/60 p-4 rounded-xl flex items-center gap-3.5">
+            <div className="p-2.5 bg-indigo-500/5 text-indigo-400 border border-indigo-500/10 rounded-lg">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-[9px] uppercase tracking-wider font-mono text-slate-400">
+                Total Output Tokens
+              </div>
+              <div className="text-base font-extrabold font-mono text-slate-100">1,082</div>
+              <div className="text-[10px] text-indigo-400 font-mono">Quantized execution</div>
+            </div>
+          </div>
+
+          <div className="bg-slate-900/40 border border-slate-800/60 p-4 rounded-xl flex items-center gap-3.5">
+            <div className="p-2.5 bg-emerald-500/5 text-emerald-400 border border-emerald-500/10 rounded-lg">
+              <Zap className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-[9px] uppercase tracking-wider font-mono text-slate-400">Prefill</div>
+              <div className="text-base font-extrabold font-mono text-emerald-400">
+                17.2 <span className="text-[10px] text-slate-400 font-normal">tok/s</span>
+              </div>
+              <div className="text-[10px] text-slate-500 font-mono">Inbound ingestion speed</div>
+            </div>
+          </div>
+
+          <div className="bg-slate-900/40 border border-slate-800/60 p-4 rounded-xl flex items-center gap-3.5">
+            <div className="p-2.5 bg-emerald-500/5 text-emerald-400 border border-emerald-500/10 rounded-lg">
+              <Activity className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-[9px] uppercase tracking-wider font-mono text-slate-400">Decode</div>
+              <div className="text-base font-extrabold font-mono text-emerald-400">
+                18.6 <span className="text-[10px] text-slate-400 font-normal">tok/s</span>
+              </div>
+              <div className="text-[10px] text-slate-500 font-mono">Continuous output streaming</div>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   )
 }
