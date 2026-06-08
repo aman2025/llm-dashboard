@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   Gauge,
   Cpu,
@@ -11,13 +11,15 @@ import {
   Zap,
   Clock,
   Loader2,
-  WifiOff
+  WifiOff,
+  RefreshCw
 } from 'lucide-react'
 import { ApiRequestError } from '@/api/axios'
-import { macmonApi } from './api'
-import type { MacmonSnapshot } from './api'
+import { macmonApi, omlxApi } from './api'
+import type { MacmonSnapshot, OmlxStatus } from './api'
 
 const PROXIED_PATH = '/macmon/snapshot'
+const OMLX_PROXIED_PATH = '/omlx/status'
 
 const bytesToGB = (b: number) => b / 1024 ** 3
 const bytesToMB = (b: number) => b / 1024 ** 2
@@ -30,45 +32,98 @@ const formatTs = (iso: string) => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
 
+const formatUptime = (s: number) => {
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  const sec = Math.floor(s % 60)
+  return `${h}h ${m}m ${sec}s`
+}
+
 export default function DashboardPage() {
   const [data, setData] = useState<MacmonSnapshot | null>(null)
   const [status, setStatus] = useState<'loading' | 'live' | 'error'>('loading')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-  useEffect(() => {
-    let cancelled = false
+  const [omlxData, setOmlxData] = useState<OmlxStatus | null>(null)
+  const [omlxStatus, setOmlxStatus] = useState<'loading' | 'live' | 'error'>(
+    'loading'
+  )
+  const [omlxErrorMsg, setOmlxErrorMsg] = useState<string | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
 
-    const fetchSnapshot = async () => {
-      try {
-        const snapshot = await macmonApi.getSnapshot({
-          timeout: 3000
-        })
-        if (cancelled) return
-        setData(snapshot)
-        setStatus('live')
-        setErrorMsg(null)
-      } catch (err) {
-        if (cancelled) return
-        const apiErr = err as ApiRequestError
-        let msg = 'Unknown error'
-        if (apiErr.code === 'TIMEOUT') msg = 'Request timed out'
-        else if (apiErr.code === 'NETWORK_ERROR') msg = 'Macmon daemon unreachable'
-        else msg = apiErr.message || `HTTP ${apiErr.status}`
-        setStatus('error')
-        setErrorMsg(msg)
-      }
-    }
-
-    fetchSnapshot()
-    const id = setInterval(fetchSnapshot, 20000)
-    return () => {
-      cancelled = true
-      clearInterval(id)
+  const fetchSnapshot = useCallback(async () => {
+    try {
+      const snapshot = await macmonApi.getSnapshot({ timeout: 3000 })
+      setData(snapshot)
+      setStatus('live')
+      setErrorMsg(null)
+    } catch (err) {
+      const apiErr = err as ApiRequestError
+      let msg = 'Unknown error'
+      if (apiErr.code === 'TIMEOUT') msg = 'Request timed out'
+      else if (apiErr.code === 'NETWORK_ERROR') msg = 'Macmon daemon unreachable'
+      else msg = apiErr.message || `HTTP ${apiErr.status}`
+      setStatus('error')
+      setErrorMsg(msg)
     }
   }, [])
 
+  const fetchStatus = useCallback(async () => {
+    try {
+      const status = await omlxApi.getStatus({ timeout: 3000 })
+      setOmlxData(status)
+      setOmlxStatus('live')
+      setOmlxErrorMsg(null)
+    } catch (err) {
+      const apiErr = err as ApiRequestError
+      let msg = 'Unknown error'
+      if (apiErr.code === 'TIMEOUT') msg = 'Request timed out'
+      else if (apiErr.code === 'NETWORK_ERROR') msg = 'Omlx server unreachable'
+      else msg = apiErr.message || `HTTP ${apiErr.status}`
+      setOmlxStatus('error')
+      setOmlxErrorMsg(msg)
+    }
+  }, [])
+
+  const refreshAll = useCallback(async () => {
+    setRefreshing(true)
+    await Promise.allSettled([fetchSnapshot(), fetchStatus()])
+    setRefreshing(false)
+  }, [fetchSnapshot, fetchStatus])
+
+  useEffect(() => {
+    fetchSnapshot()
+    const id = setInterval(fetchSnapshot, 28000)
+    return () => clearInterval(id)
+  }, [fetchSnapshot])
+
+  useEffect(() => {
+    fetchStatus()
+    const id = setInterval(fetchStatus, 28000)
+    return () => clearInterval(id)
+  }, [fetchStatus])
+
   return (
     <div className="space-y-8 p-6 text-slate-100 max-w-[1232px] mx-auto">
+      {/* ==================== GLOBAL REFRESH BAR ==================== */}
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500">
+          Auto-refresh every 28s · click refresh for instant update
+        </span>
+        <button
+          type="button"
+          onClick={refreshAll}
+          disabled={refreshing}
+          aria-label="Refresh all data"
+          className="flex items-center gap-1.5 text-[10px] font-mono font-semibold text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 hover:border-indigo-500/30 px-2.5 py-1.5 rounded transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          <RefreshCw
+            className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`}
+          />
+          {refreshing ? 'Refreshing...' : 'Refresh'}
+        </button>
+      </div>
+
       {/* ==================== MACMON SECTION ==================== */}
       <section className="space-y-4">
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -310,154 +365,281 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <div className="flex items-center gap-2.5">
             <Server className="w-5 h-5 text-indigo-400" />
-            <h2 className="text-sm uppercase tracking-wider font-mono font-bold text-slate-200">
+            <h2 className="text-sm uppercase tracking-wider font-mono font-bold text-slate-200 flex items-center gap-2">
               Omlx Server Telemetry{' '}
               <span className="text-slate-500 font-mono font-normal lowercase">(host statistics only)</span>
+              <span
+                className="text-[10px] font-medium bg-slate-950/80 border border-slate-800 px-2 py-0.5 rounded flex items-center gap-1.5"
+                title={omlxStatus === 'error' && omlxErrorMsg ? omlxErrorMsg : undefined}
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    omlxStatus === 'live'
+                      ? 'bg-emerald-500'
+                      : omlxStatus === 'error'
+                        ? 'bg-red-500'
+                        : 'bg-amber-500 animate-pulse'
+                  }`}
+                />
+                <span
+                  className={
+                    omlxStatus === 'live'
+                      ? 'text-emerald-300'
+                      : omlxStatus === 'error'
+                        ? 'text-red-400'
+                        : 'text-amber-400'
+                  }
+                >
+                  {omlxStatus === 'live'
+                    ? `Live v${omlxData?.version ?? ''}`.trim()
+                    : omlxStatus === 'error'
+                      ? 'Connection Lost'
+                      : 'Connecting...'}
+                </span>
+              </span>
             </h2>
           </div>
-          <span className="text-[10px] font-mono text-indigo-500 bg-indigo-500/5 px-2.5 py-1 rounded border border-indigo-500/10">
-            Node-Level State
+          <span
+            className={`text-[10px] font-mono px-2.5 py-1 rounded border ${
+              omlxStatus === 'error'
+                ? 'text-red-400 bg-red-500/5 border-red-500/15'
+                : 'text-indigo-500 bg-indigo-500/5 border-indigo-500/10'
+            }`}
+          >
+            {omlxStatus === 'live' && omlxData
+              ? `Uptime  ${formatUptime(omlxData.uptime_seconds)}`
+              : omlxStatus === 'error' && omlxData
+                ? `Last Uptime  ${formatUptime(omlxData.uptime_seconds)}`
+                : 'Uptime  —'}
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Col 1: Omlx-Daemon */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col justify-between space-y-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">
-                  Host Engine
-                </span>
-                <span className="text-lg font-extrabold text-white font-mono">Omlx-Daemon</span>
-              </div>
-              <div className="bg-indigo-500/10 p-2 text-indigo-400 rounded-lg border border-indigo-500/20">
-                <Cpu className="w-5 h-5" />
-              </div>
-            </div>
-
-            <div className="space-y-2 text-xs border-y border-slate-800/60 py-3 font-mono">
-              <div className="flex justify-between">
-                <span className="text-slate-400">Uptime:</span>
-                <span className="text-indigo-400 font-bold flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5" />
-                  1h 51m 12s
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Active Model:</span>
-                <span className="text-indigo-300 font-semibold truncate max-w-[200px]">
-                  &quot;qwen3.5 4b 4bit&quot;
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">All Models:</span>
-                <span className="text-slate-200 font-semibold text-right max-w-[180px] truncate">
-                  qwen3.5 4b 4bit, qwen3...
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Models Loaded:</span>
-                <span className="text-emerald-400 font-bold flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />2 in memory
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Models Loading:</span>
-                <span className="text-slate-200">0 loading</span>
-              </div>
-            </div>
+        {!omlxData && omlxStatus === 'loading' && (
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-16 flex flex-col items-center justify-center gap-3">
+            <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
+            <span className="text-xs font-mono text-slate-400">
+              Connecting to Omlx server at {OMLX_PROXIED_PATH}...
+            </span>
           </div>
+        )}
 
-          {/* Col 2: VRAM Memory */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col justify-between space-y-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">
-                  Host Allocation
-                </span>
-                <span className="text-lg font-extrabold text-white">VRAM Memory</span>
-              </div>
-              <div className="bg-amber-500/10 p-2 text-amber-400 rounded-lg border border-amber-500/20">
-                <HardDrive className="w-5 h-5" />
-              </div>
-            </div>
+        {!omlxData && omlxStatus === 'error' && (
+          <div className="bg-slate-900 border border-red-500/20 rounded-xl p-8 flex flex-col items-center justify-center gap-2">
+            <WifiOff className="w-7 h-7 text-red-400" />
+            <span className="text-sm font-mono font-semibold text-red-300">
+              Unable to reach Omlx server
+            </span>
+            <span className="text-xs font-mono text-slate-400">{omlxErrorMsg}</span>
+            <span className="text-[10px] font-mono text-slate-500 mt-1">
+              Expected endpoint: {OMLX_PROXIED_PATH}
+            </span>
+          </div>
+        )}
 
-            <div className="space-y-3.5 py-2 font-mono">
-              <div>
-                <div className="flex justify-between items-center text-xs mb-1">
-                  <span className="text-slate-400">Model Usage bytes:</span>
-                  <span className="text-amber-400 font-bold">2.80GB</span>
+        {omlxData && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Col 1: Omlx-Daemon */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col justify-between space-y-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">
+                    Host Engine
+                  </span>
+                  <span className="text-lg font-extrabold text-white font-mono">Omlx-Daemon</span>
                 </div>
-                <div className="h-2.5 w-full bg-slate-950 rounded-full border border-slate-800/60 overflow-hidden p-0.5">
-                  <div
-                    className="h-full bg-gradient-to-r from-amber-500 to-indigo-500 rounded-full"
-                    style={{ width: '17.5%' }}
-                  />
+                <div className="bg-indigo-500/10 p-2 text-indigo-400 rounded-lg border border-indigo-500/20">
+                  <Cpu className="w-5 h-5" />
                 </div>
               </div>
 
-              <div className="flex justify-between text-[11px] text-slate-400 pt-1.5 border-t border-slate-800/50">
-                <span>Memory Capacity:</span>
-                <span className="text-slate-300">16.00GB</span>
+              <div className="space-y-2 text-xs border-y border-slate-800/60 py-3 font-mono">
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Uptime:</span>
+                  <span className="text-indigo-400 font-bold flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5" />
+                    {formatUptime(omlxData.uptime_seconds)}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block mb-1.5">
+                    Active Model:
+                  </span>
+                  <span className="inline-block text-indigo-300 font-semibold text-[11px] bg-indigo-500/10 border border-indigo-500/25 px-2 py-1 rounded font-mono break-all max-w-full">
+                    {omlxData.loaded_models[0] ?? omlxData.default_model}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block mb-1.5">
+                    Loaded Models ({omlxData.loaded_models.length}):
+                  </span>
+                  {omlxData.loaded_models.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {omlxData.loaded_models.map((m) => (
+                        <span
+                          key={m}
+                          className="bg-slate-950/60 border border-slate-800/60 px-2 py-1 rounded text-[11px] text-slate-200 font-mono break-all"
+                        >
+                          {m}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-slate-200 text-[11px]">None</span>
+                  )}
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Models Discovered:</span>
+                  <span className="text-slate-200">{omlxData.models_discovered}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Models Loaded:</span>
+                  <span className="text-emerald-400 font-bold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
+                    {omlxData.models_loaded} in memory
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Models Loading:</span>
+                  <span className="text-slate-200">{omlxData.models_loading} loading</span>
+                </div>
+                <div className="flex justify-between pt-1.5 border-t border-slate-800/50">
+                  <span className="text-slate-400">Active / Waiting Requests:</span>
+                  <span className="text-amber-400 font-bold">
+                    {omlxData.active_requests} / {omlxData.waiting_requests}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Total Requests:</span>
+                  <span className="text-slate-200">
+                    {omlxData.total_requests.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Col 2: VRAM Memory */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col justify-between space-y-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">
+                    Host Allocation
+                  </span>
+                  <span className="text-lg font-extrabold text-white">VRAM Memory</span>
+                </div>
+                <div className="bg-amber-500/10 p-2 text-amber-400 rounded-lg border border-amber-500/20">
+                  <HardDrive className="w-5 h-5" />
+                </div>
+              </div>
+
+              <div className="space-y-3.5 py-2 font-mono">
+                <div>
+                  <div className="flex justify-between items-center text-xs mb-1">
+                    <span className="text-slate-400">Model Usage bytes:</span>
+                    <span className="text-amber-400 font-bold">
+                      {omlxData.model_memory_used_formatted}
+                    </span>
+                  </div>
+                  <div className="h-2.5 w-full bg-slate-950 rounded-full border border-slate-800/60 overflow-hidden p-0.5">
+                    <div
+                      className="h-full bg-gradient-to-r from-amber-500 to-indigo-500 rounded-full"
+                      style={{
+                        width: `${
+                          omlxData.model_memory_max > 0
+                            ? Math.min(
+                                100,
+                                (omlxData.model_memory_used / omlxData.model_memory_max) *
+                                  100
+                              )
+                            : 0
+                        }%`
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-between text-[11px] text-slate-400 pt-1.5 border-t border-slate-800/50">
+                  <span>Memory Capacity:</span>
+                  <span className="text-slate-300">
+                    {omlxData.model_memory_max_formatted}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Bottom metric cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-slate-900/40 border border-slate-800/60 p-4 rounded-xl flex items-center gap-3.5">
-            <div className="p-2.5 bg-indigo-500/5 text-indigo-400 border border-indigo-500/10 rounded-lg">
-              <Database className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="text-[9px] uppercase tracking-wider font-mono text-slate-400">
-                Total Input Tokens
+        {omlxData && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-slate-900/40 border border-slate-800/60 p-4 rounded-xl flex items-center gap-3.5">
+              <div className="p-2.5 bg-indigo-500/5 text-indigo-400 border border-indigo-500/10 rounded-lg">
+                <Database className="w-4 h-4" />
               </div>
-              <div className="text-base font-extrabold font-mono text-slate-100">78</div>
-              <div className="text-[10px] text-indigo-400 font-mono">In-flight cache mapping</div>
+              <div>
+                <div className="text-[9px] uppercase tracking-wider font-mono text-slate-400">
+                  Total Input Tokens
+                </div>
+                <div className="text-base font-extrabold font-mono text-slate-100">
+                  {omlxData.total_prompt_tokens.toLocaleString()}
+                </div>
+                <div className="text-[10px] text-indigo-400 font-mono">
+                  {omlxData.total_cached_tokens.toLocaleString()} cached
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div className="bg-slate-900/40 border border-slate-800/60 p-4 rounded-xl flex items-center gap-3.5">
-            <div className="p-2.5 bg-indigo-500/5 text-indigo-400 border border-indigo-500/10 rounded-lg">
-              <TrendingUp className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="text-[9px] uppercase tracking-wider font-mono text-slate-400">
-                Total Output Tokens
+            <div className="bg-slate-900/40 border border-slate-800/60 p-4 rounded-xl flex items-center gap-3.5">
+              <div className="p-2.5 bg-indigo-500/5 text-indigo-400 border border-indigo-500/10 rounded-lg">
+                <TrendingUp className="w-4 h-4" />
               </div>
-              <div className="text-base font-extrabold font-mono text-slate-100">1,082</div>
-              <div className="text-[10px] text-indigo-400 font-mono">Quantized execution</div>
+              <div>
+                <div className="text-[9px] uppercase tracking-wider font-mono text-slate-400">
+                  Total Output Tokens
+                </div>
+                <div className="text-base font-extrabold font-mono text-slate-100">
+                  {omlxData.total_completion_tokens.toLocaleString()}
+                </div>
+                <div className="text-[10px] text-indigo-400 font-mono">
+                  {(omlxData.cache_efficiency * 100).toFixed(1)}% cache hit
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div className="bg-slate-900/40 border border-slate-800/60 p-4 rounded-xl flex items-center gap-3.5">
-            <div className="p-2.5 bg-emerald-500/5 text-emerald-400 border border-emerald-500/10 rounded-lg">
-              <Zap className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="text-[9px] uppercase tracking-wider font-mono text-slate-400">Prefill</div>
-              <div className="text-base font-extrabold font-mono text-emerald-400">
-                17.2 <span className="text-[10px] text-slate-400 font-normal">tok/s</span>
+            <div className="bg-slate-900/40 border border-slate-800/60 p-4 rounded-xl flex items-center gap-3.5">
+              <div className="p-2.5 bg-emerald-500/5 text-emerald-400 border border-emerald-500/10 rounded-lg">
+                <Zap className="w-4 h-4" />
               </div>
-              <div className="text-[10px] text-slate-500 font-mono">Inbound ingestion speed</div>
+              <div>
+                <div className="text-[9px] uppercase tracking-wider font-mono text-slate-400">
+                  Prefill
+                </div>
+                <div className="text-base font-extrabold font-mono text-emerald-400">
+                  {omlxData.avg_prefill_tps.toFixed(1)}{' '}
+                  <span className="text-[10px] text-slate-400 font-normal">tok/s</span>
+                </div>
+                <div className="text-[10px] text-slate-500 font-mono">Inbound ingestion speed</div>
+              </div>
             </div>
-          </div>
 
-          <div className="bg-slate-900/40 border border-slate-800/60 p-4 rounded-xl flex items-center gap-3.5">
-            <div className="p-2.5 bg-emerald-500/5 text-emerald-400 border border-emerald-500/10 rounded-lg">
-              <Activity className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="text-[9px] uppercase tracking-wider font-mono text-slate-400">Decode</div>
-              <div className="text-base font-extrabold font-mono text-emerald-400">
-                18.6 <span className="text-[10px] text-slate-400 font-normal">tok/s</span>
+            <div className="bg-slate-900/40 border border-slate-800/60 p-4 rounded-xl flex items-center gap-3.5">
+              <div className="p-2.5 bg-emerald-500/5 text-emerald-400 border border-emerald-500/10 rounded-lg">
+                <Activity className="w-4 h-4" />
               </div>
-              <div className="text-[10px] text-slate-500 font-mono">Continuous output streaming</div>
+              <div>
+                <div className="text-[9px] uppercase tracking-wider font-mono text-slate-400">
+                  Decode
+                </div>
+                <div className="text-base font-extrabold font-mono text-emerald-400">
+                  {omlxData.avg_generation_tps.toFixed(1)}{' '}
+                  <span className="text-[10px] text-slate-400 font-normal">tok/s</span>
+                </div>
+                <div className="text-[10px] text-slate-500 font-mono">
+                  Continuous output streaming
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </section>
     </div>
   )
