@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import {
   Gauge,
   Cpu,
@@ -8,10 +9,64 @@ import {
   Database,
   TrendingUp,
   Zap,
-  Clock
+  Clock,
+  Loader2,
+  WifiOff
 } from 'lucide-react'
+import { ApiRequestError } from '@/api/axios'
+import { macmonApi } from './api'
+import type { MacmonSnapshot } from './api'
+
+const PROXIED_PATH = '/macmon/snapshot'
+
+const bytesToGB = (b: number) => b / 1024 ** 3
+const bytesToMB = (b: number) => b / 1024 ** 2
+const pct = (v: number, d = 1) => (v * 100).toFixed(d)
+const watts = (v: number) => v.toFixed(2)
+const celsius = (v: number) => v.toFixed(1)
+const formatTs = (iso: string) => {
+  const d = new Date(iso)
+  const pad = (n: number) => n.toString().padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
 
 export default function DashboardPage() {
+  const [data, setData] = useState<MacmonSnapshot | null>(null)
+  const [status, setStatus] = useState<'loading' | 'live' | 'error'>('loading')
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const fetchSnapshot = async () => {
+      try {
+        const snapshot = await macmonApi.getSnapshot({
+          timeout: 3000
+        })
+        if (cancelled) return
+        setData(snapshot)
+        setStatus('live')
+        setErrorMsg(null)
+      } catch (err) {
+        if (cancelled) return
+        const apiErr = err as ApiRequestError
+        let msg = 'Unknown error'
+        if (apiErr.code === 'TIMEOUT') msg = 'Request timed out'
+        else if (apiErr.code === 'NETWORK_ERROR') msg = 'Macmon daemon unreachable'
+        else msg = apiErr.message || `HTTP ${apiErr.status}`
+        setStatus('error')
+        setErrorMsg(msg)
+      }
+    }
+
+    fetchSnapshot()
+    const id = setInterval(fetchSnapshot, 20000)
+    return () => {
+      cancelled = true
+      clearInterval(id)
+    }
+  }, [])
+
   return (
     <div className="space-y-8 p-6 text-slate-100 max-w-[1232px] mx-auto">
       {/* ==================== MACMON SECTION ==================== */}
@@ -21,150 +76,233 @@ export default function DashboardPage() {
             <Gauge className="w-5 h-5 text-indigo-400" />
             <h2 className="text-sm uppercase tracking-wider font-mono font-bold text-slate-200 flex items-center gap-2">
               Macmon macOS System Telemetry
-              <span className="text-[10px] font-medium text-slate-400 bg-slate-950/80 border border-slate-800 px-2 py-0.5 rounded flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full" />
-                Offline Simulated M5
+              <span
+                className="text-[10px] font-medium bg-slate-950/80 border border-slate-800 px-2 py-0.5 rounded flex items-center gap-1.5"
+                title={status === 'error' && errorMsg ? errorMsg : undefined}
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    status === 'live'
+                      ? 'bg-emerald-500'
+                      : status === 'error'
+                        ? 'bg-red-500'
+                        : 'bg-amber-500 animate-pulse'
+                  }`}
+                />
+                <span
+                  className={
+                    status === 'live'
+                      ? 'text-emerald-300'
+                      : status === 'error'
+                        ? 'text-red-400'
+                        : 'text-amber-400'
+                  }
+                >
+                  {status === 'live'
+                    ? `Live ${data?.soc.chip_name ?? ''}`.trim()
+                    : status === 'error'
+                      ? 'Connection Lost'
+                      : 'Connecting...'}
+                </span>
               </span>
             </h2>
           </div>
-          <span className="text-[10px] font-mono text-indigo-400 bg-indigo-500/5 px-2.5 py-1 rounded border border-indigo-500/15">
-            Sampling Time &nbsp; 2026-06-05 02:00:46
+          <span
+            className={`text-[10px] font-mono px-2.5 py-1 rounded border ${
+              status === 'error'
+                ? 'text-red-400 bg-red-500/5 border-red-500/15'
+                : 'text-indigo-400 bg-indigo-500/5 border-indigo-500/15'
+            }`}
+          >
+            {status === 'live' && data
+              ? `Sampling Time  ${formatTs(data.timestamp)}`
+              : status === 'error' && data
+                ? `Last Update  ${formatTs(data.timestamp)}`
+                : 'Sampling Time  —'}
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Card 1: Silicon Engine Loads */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
-                  Silicon Engine Loads
-                </span>
-                <h3 className="text-sm font-bold text-white font-mono">CPU / GPU / Memory</h3>
+        {!data && status === 'loading' && (
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-16 flex flex-col items-center justify-center gap-3">
+            <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
+            <span className="text-xs font-mono text-slate-400">
+              Connecting to Macmon daemon at {PROXIED_PATH}...
+            </span>
+          </div>
+        )}
+
+        {!data && status === 'error' && (
+          <div className="bg-slate-900 border border-red-500/20 rounded-xl p-8 flex flex-col items-center justify-center gap-2">
+            <WifiOff className="w-7 h-7 text-red-400" />
+            <span className="text-sm font-mono font-semibold text-red-300">
+              Unable to reach Macmon daemon
+            </span>
+            <span className="text-xs font-mono text-slate-400">{errorMsg}</span>
+            <span className="text-[10px] font-mono text-slate-500 mt-1">
+              Expected endpoint: {PROXIED_PATH}
+            </span>
+          </div>
+        )}
+
+        {data && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Card 1: Silicon Engine Loads */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                    Silicon Engine Loads
+                  </span>
+                  <h3 className="text-sm font-bold text-white font-mono">CPU / GPU / Memory</h3>
+                </div>
+                <Activity className="w-4 h-4 text-indigo-400" />
               </div>
-              <Activity className="w-4 h-4 text-indigo-400" />
+
+              <div className="space-y-3 font-mono text-xs">
+                <div>
+                  <div className="flex justify-between mb-1 text-[11px]">
+                    <span className="text-slate-400">CPU Usage:</span>
+                    <span className="text-slate-200 font-bold">{pct(data.cpu_usage_pct)}%</span>
+                  </div>
+                  <div className="h-1.5 bg-slate-950 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-indigo-500"
+                      style={{ width: `${Math.min(100, Number(pct(data.cpu_usage_pct)))}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between mb-1 text-[11px]">
+                    <span className="text-slate-400">GPU Usage:</span>
+                    <span className="text-indigo-400 font-bold">{pct(data.gpu_usage[1])}%</span>
+                  </div>
+                  <div className="h-1.5 bg-slate-950 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-indigo-500 to-indigo-400"
+                      style={{ width: `${Math.min(100, Number(pct(data.gpu_usage[1])))}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between mb-1 text-[11px]">
+                    <span className="text-slate-400">Unified Memory:</span>
+                    <span className="text-emerald-400 font-bold text-[11px]">
+                      {bytesToGB(data.memory.ram_usage).toFixed(2)} /{' '}
+                      {bytesToGB(data.memory.ram_total).toFixed(2)} GB
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-slate-950 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-500"
+                      style={{
+                        width: `${
+                          data.memory.ram_total > 0
+                            ? Math.min(100, (data.memory.ram_usage / data.memory.ram_total) * 100)
+                            : 0
+                        }%`
+                      }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[10px] text-slate-500 mt-1.5 pl-2">
+                    <span>↳ Swap Usage:</span>
+                    <span className="text-slate-400 font-bold">
+                      {bytesToMB(data.memory.swap_usage).toFixed(0)} /{' '}
+                      {bytesToMB(data.memory.swap_total).toFixed(0)} MB
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-3 font-mono text-xs">
-              <div>
-                <div className="flex justify-between mb-1 text-[11px]">
-                  <span className="text-slate-400">CPU Usage:</span>
-                  <span className="text-slate-200 font-bold">14.5%</span>
+            {/* Card 2: SoC Hardware */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                    Silicon Specifications
+                  </span>
+                  <h3 className="text-sm font-bold text-white font-mono">SoC Hardware</h3>
                 </div>
-                <div className="h-1.5 bg-slate-950 rounded-full overflow-hidden">
-                  <div className="h-full bg-indigo-500" style={{ width: '14.5%' }} />
+                <Cpu className="w-4 h-4 text-indigo-400" />
+              </div>
+
+              <div className="space-y-2.5 font-mono text-xs text-slate-300">
+                <div className="flex justify-between items-center bg-slate-950/40 px-3 py-2 rounded-lg border border-slate-800/60">
+                  <span className="text-slate-400 text-[11px]">Chip Model:</span>
+                  <span className="text-white font-bold">{data.soc.chip_name}</span>
+                </div>
+                <div className="flex justify-between items-center bg-slate-950/40 px-3 py-2 rounded-lg border border-slate-800/60">
+                  <span className="text-slate-400 text-[11px]">P-Core Count:</span>
+                  <span className="text-indigo-400 font-bold">{data.soc.pcpu_cores} Cores</span>
+                </div>
+                <div className="flex justify-between items-center bg-slate-950/40 px-3 py-2 rounded-lg border border-slate-800/60">
+                  <span className="text-slate-400 text-[11px]">E-Core Count:</span>
+                  <span className="text-slate-200 font-bold">{data.soc.ecpu_cores} Cores</span>
+                </div>
+                <div className="flex justify-between items-center bg-slate-950/40 px-3 py-2 rounded-lg border border-slate-800/60">
+                  <span className="text-slate-400 text-[11px]">GPU Core Count:</span>
+                  <span className="text-emerald-400 font-bold">{data.soc.gpu_cores} Cores</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 3: SoC Heat & Power Draw */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                    Thermals & Consumption
+                  </span>
+                  <h3 className="text-sm font-bold text-white font-mono">SoC Heat & Power Draw</h3>
+                </div>
+                <Thermometer className="w-4 h-4 text-emerald-400" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 font-mono text-xs">
+                <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/60">
+                  <span className="text-[10px] text-slate-500 block">CPU Temp:</span>
+                  <span className="text-sm font-bold text-slate-200 mt-0.5 block">
+                    {celsius(data.temp.cpu_temp_avg)}°C
+                  </span>
+                </div>
+                <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/60">
+                  <span className="text-[10px] text-slate-500 block">GPU Temp:</span>
+                  <span className="text-sm font-bold text-indigo-300 mt-0.5 block">
+                    {celsius(data.temp.gpu_temp_avg)}°C
+                  </span>
                 </div>
               </div>
 
-              <div>
-                <div className="flex justify-between mb-1 text-[11px]">
-                  <span className="text-slate-400">GPU Usage:</span>
-                  <span className="text-indigo-400 font-bold">98.7%</span>
+              <div className="font-mono text-xs pt-3 border-t border-slate-800/60 space-y-2">
+                <div className="flex justify-between items-center text-xs text-white pb-1 border-b border-slate-950/40">
+                  <span className="font-sans font-semibold text-slate-400">Silicon Power Draw:</span>
+                  <span className="font-mono font-extrabold text-indigo-400">
+                    {watts(data.all_power)} Watts
+                  </span>
                 </div>
-                <div className="h-1.5 bg-slate-950 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-indigo-500 to-indigo-400"
-                    style={{ width: '98.7%' }}
-                  />
-                </div>
-              </div>
 
-              <div>
-                <div className="flex justify-between mb-1 text-[11px]">
-                  <span className="text-slate-400">Unified Memory:</span>
-                  <span className="text-emerald-400 font-bold text-[11px]">10.47 / 16 GB</span>
+                <div className="flex justify-between text-[11px] text-slate-500">
+                  <span>↳ CPU Core Power:</span>
+                  <span className="text-slate-400 font-bold">{watts(data.cpu_power)}W</span>
                 </div>
-                <div className="h-1.5 bg-slate-950 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-500" style={{ width: '65.4%' }} />
+                <div className="flex justify-between text-[11px] text-slate-500">
+                  <span>↳ GPU Core Power:</span>
+                  <span className="text-indigo-300 font-bold">{watts(data.gpu_power)}W</span>
                 </div>
-                <div className="flex justify-between text-[10px] text-slate-500 mt-1.5 pl-2">
-                  <span>↳ Swap Usage:</span>
-                  <span className="text-slate-400 font-bold">0 / 0 MB</span>
+                <div className="flex justify-between text-[11px] text-slate-500">
+                  <span>↳ ANE Power:</span>
+                  <span className="text-amber-400 font-bold">{watts(data.ane_power)}W</span>
+                </div>
+                <div className="flex justify-between text-[11px] text-slate-500 pt-1.5 border-t border-slate-950/40 font-semibold">
+                  <span>↳ RAM Bus Power:</span>
+                  <span className="text-emerald-400 font-bold">{watts(data.ram_power)}W</span>
                 </div>
               </div>
             </div>
           </div>
-
-          {/* Card 2: SoC Hardware */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
-                  Silicon Specifications
-                </span>
-                <h3 className="text-sm font-bold text-white font-mono">SoC Hardware</h3>
-              </div>
-              <Cpu className="w-4 h-4 text-indigo-400" />
-            </div>
-
-            <div className="space-y-2.5 font-mono text-xs text-slate-300">
-              <div className="flex justify-between items-center bg-slate-950/40 px-3 py-2 rounded-lg border border-slate-800/60">
-                <span className="text-slate-400 text-[11px]">Chip Model:</span>
-                <span className="text-white font-bold">Apple M5</span>
-              </div>
-              <div className="flex justify-between items-center bg-slate-950/40 px-3 py-2 rounded-lg border border-slate-800/60">
-                <span className="text-slate-400 text-[11px]">P-Core Count:</span>
-                <span className="text-indigo-400 font-bold">4 Cores</span>
-              </div>
-              <div className="flex justify-between items-center bg-slate-950/40 px-3 py-2 rounded-lg border border-slate-800/60">
-                <span className="text-slate-400 text-[11px]">E-Core Count:</span>
-                <span className="text-slate-200 font-bold">6 Cores</span>
-              </div>
-              <div className="flex justify-between items-center bg-slate-950/40 px-3 py-2 rounded-lg border border-slate-800/60">
-                <span className="text-slate-400 text-[11px]">GPU Core Count:</span>
-                <span className="text-emerald-400 font-bold">10 Cores</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 3: SoC Heat & Power Draw */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
-                  Thermals & Consumption
-                </span>
-                <h3 className="text-sm font-bold text-white font-mono">SoC Heat & Power Draw</h3>
-              </div>
-              <Thermometer className="w-4 h-4 text-emerald-400" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 font-mono text-xs">
-              <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/60">
-                <span className="text-[10px] text-slate-500 block">CPU Temp:</span>
-                <span className="text-sm font-bold text-slate-200 mt-0.5 block">69.1°C</span>
-              </div>
-              <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/60">
-                <span className="text-[10px] text-slate-500 block">GPU Temp:</span>
-                <span className="text-sm font-bold text-indigo-300 mt-0.5 block">82°C</span>
-              </div>
-            </div>
-
-            <div className="font-mono text-xs pt-3 border-t border-slate-800/60 space-y-2">
-              <div className="flex justify-between items-center text-xs text-white pb-1 border-b border-slate-950/40">
-                <span className="font-sans font-semibold text-slate-400">Silicon Power Draw:</span>
-                <span className="font-mono font-extrabold text-indigo-400">28.45 Watts</span>
-              </div>
-
-              <div className="flex justify-between text-[11px] text-slate-500">
-                <span>↳ CPU Core Power:</span>
-                <span className="text-slate-400 font-bold">1.97W</span>
-              </div>
-              <div className="flex justify-between text-[11px] text-slate-500">
-                <span>↳ GPU Core Power:</span>
-                <span className="text-indigo-300 font-bold">12.41W</span>
-              </div>
-              <div className="flex justify-between text-[11px] text-slate-500">
-                <span>↳ RAM Bus Power:</span>
-                <span className="text-emerald-400 font-bold">1.74W</span>
-              </div>
-              <div className="flex justify-between text-[11px] text-slate-500 pt-1.5 border-t border-slate-950/40 font-semibold">
-                <span>↳ SoC All Power:</span>
-                <span className="text-indigo-400 font-bold">14.39W</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        )}
       </section>
 
       {/* ==================== OMLX SERVER SECTION ==================== */}
