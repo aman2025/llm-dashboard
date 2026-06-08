@@ -77,6 +77,10 @@ export default function DashboardPage() {
                 <div className="h-1.5 bg-slate-950 rounded-full overflow-hidden">
                   <div className="h-full bg-emerald-500" style={{ width: '65.4%' }} />
                 </div>
+                <div className="flex justify-between text-[10px] text-slate-500 mt-1.5 pl-2">
+                  <span>↳ Swap Usage:</span>
+                  <span className="text-slate-400 font-bold">0 / 0 MB</span>
+                </div>
               </div>
             </div>
           </div>
