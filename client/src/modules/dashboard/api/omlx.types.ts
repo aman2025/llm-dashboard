@@ -6,13 +6,8 @@ export interface OmlxStatus {
   version: string
   uptime_seconds: number
   models_discovered: number
-  models_loaded: number
-  models_loading: number
-  default_model: string
   loaded_models: string[]
   total_requests: number
-  active_requests: number
-  waiting_requests: number
   total_prompt_tokens: number
   total_completion_tokens: number
   total_cached_tokens: number

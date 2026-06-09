@@ -462,14 +462,6 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <span className="text-slate-400 block mb-1.5">
-                    Active Model:
-                  </span>
-                  <span className="inline-block text-indigo-300 font-semibold text-[11px] bg-indigo-500/10 border border-indigo-500/25 px-2 py-1 rounded font-mono break-all max-w-full">
-                    {omlxData.loaded_models[0] ?? omlxData.default_model}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block mb-1.5">
                     Loaded Models ({omlxData.loaded_models.length}):
                   </span>
                   {omlxData.loaded_models.length > 0 ? (
@@ -490,23 +482,6 @@ export default function DashboardPage() {
                 <div className="flex justify-between">
                   <span className="text-slate-400">Models Discovered:</span>
                   <span className="text-slate-200">{omlxData.models_discovered}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Models Loaded:</span>
-                  <span className="text-emerald-400 font-bold flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
-                    {omlxData.models_loaded} in memory
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Models Loading:</span>
-                  <span className="text-slate-200">{omlxData.models_loading} loading</span>
-                </div>
-                <div className="flex justify-between pt-1.5 border-t border-slate-800/50">
-                  <span className="text-slate-400">Active / Waiting Requests:</span>
-                  <span className="text-amber-400 font-bold">
-                    {omlxData.active_requests} / {omlxData.waiting_requests}
-                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400">Total Requests:</span>
