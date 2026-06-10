@@ -1,10 +1,11 @@
 import { Link } from '@tanstack/react-router'
 import { cn } from '@/lib/utils'
-import { Brain, LayoutDashboard, Settings, MessageSquare } from 'lucide-react'
+import { Brain, LayoutDashboard, Settings, MessageSquare, ClipboardCheck } from 'lucide-react'
 
 const navItems = [
   { name: 'Dashboard', path: '/', icon: LayoutDashboard },
   { name: 'AI Chat', path: '/chat', icon: MessageSquare },
+  { name: 'Evaluation', path: '/evaluation', icon: ClipboardCheck },
   { name: 'Settings', path: '/settings', icon: Settings }
 ] as const
 

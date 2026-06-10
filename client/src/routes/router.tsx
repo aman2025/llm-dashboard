@@ -3,6 +3,7 @@ import { AppLayout } from '../components/layout/layout'
 import DashboardPage from '../modules/dashboard'
 import SettingsPage from '../modules/settings'
 import ChatPage from '../modules/ai-chat'
+import EvaluationPage from '../modules/evaluation'
 
 const rootRoute = createRootRoute({
   component: AppLayout
@@ -26,7 +27,18 @@ const chatRoute = createRoute({
   component: ChatPage
 })
 
-const routeTree = rootRoute.addChildren([indexRoute, settingsRoute, chatRoute])
+const evaluationRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/evaluation',
+  component: EvaluationPage
+})
+
+const routeTree = rootRoute.addChildren([
+  indexRoute,
+  settingsRoute,
+  chatRoute,
+  evaluationRoute
+])
 
 export const router = createRouter({ routeTree })
 
