@@ -67,13 +67,27 @@ async function main() {
   // Seed example function schemas
   await prisma.functionSchema.upsert({
     where: { name: 'get_weather_forecast' },
-    update: {},
+    update: {
+      description:
+        'Retrieve live multi-city weather conditions, wind metrics, and atmospheric humidity',
+      parameters: JSON.stringify({
+        type: 'object',
+        properties: {
+          locations: { type: 'array', items: { type: 'string' } }
+        },
+        required: ['locations']
+      })
+    },
     create: {
       name: 'get_weather_forecast',
       description:
         'Retrieve live multi-city weather conditions, wind metrics, and atmospheric humidity',
       parameters: JSON.stringify({
-        locations: { type: 'array', items: { type: 'string' } }
+        type: 'object',
+        properties: {
+          locations: { type: 'array', items: { type: 'string' } }
+        },
+        required: ['locations']
       }),
       enabled: true
     }
@@ -81,14 +95,29 @@ async function main() {
 
   await prisma.functionSchema.upsert({
     where: { name: 'calculator_solver' },
-    update: {},
+    update: {
+      description:
+        'Executes highly precise double-precision floating math equations and matrix coordinates',
+      parameters: JSON.stringify({
+        type: 'object',
+        properties: {
+          formula: { type: 'string' },
+          steps_required: { type: 'boolean' }
+        },
+        required: ['formula']
+      })
+    },
     create: {
       name: 'calculator_solver',
       description:
         'Executes highly precise double-precision floating math equations and matrix coordinates',
       parameters: JSON.stringify({
-        formula: { type: 'string' },
-        steps_required: { type: 'boolean' }
+        type: 'object',
+        properties: {
+          formula: { type: 'string' },
+          steps_required: { type: 'boolean' }
+        },
+        required: ['formula']
       }),
       enabled: true
     }
