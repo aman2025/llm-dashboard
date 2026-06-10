@@ -1,12 +1,5 @@
 import { useState } from 'react'
-import {
-  Wrench,
-  Sliders,
-  Database,
-  FileCode,
-  MessageSquare,
-  Send
-} from 'lucide-react'
+import { Wrench, Sliders, Database, FileCode, MessageSquare, Send } from 'lucide-react'
 import { useEvaluationStream } from './hooks/useEvaluationStream'
 
 interface ToolDefinition {
@@ -67,12 +60,11 @@ export default function EvaluationPage() {
 
   const hasData = lastRequest !== null || lastResponse !== null
   const metrics = {
-    prompt_tokens: lastMetrics?.promptTokens ?? 0,
-    completion_tokens: lastMetrics?.completionTokens ?? 0,
-    total_tokens: lastMetrics?.totalTokens ?? 0,
-    prompt_eval_duration: lastMetrics?.promptEvalDuration ?? 0,
-    generation_duration: lastMetrics?.generationDuration ?? 0,
-    time_to_first_token: lastMetrics?.timeToFirstToken ?? 0
+    inputTokens: lastMetrics?.inputTokens ?? 0,
+    outputTokens: lastMetrics?.outputTokens ?? 0,
+    timeToFirstToken: lastMetrics?.timeToFirstToken ?? 0,
+    promptTokensPerSecond: lastMetrics?.promptTokensPerSecond ?? 0,
+    generationTokensPerSecond: lastMetrics?.generationTokensPerSecond ?? 0
   }
 
   const handleSend = async () => {
@@ -155,12 +147,8 @@ export default function EvaluationPage() {
 
             <div className="space-y-4 font-mono text-xs">
               <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1.5">
-                <span className="text-[10px] text-slate-500 uppercase">
-                  Target Engine:
-                </span>
-                <div className="text-white font-extrabold text-xs">
-                  {CURRENT_MODEL.name}
-                </div>
+                <span className="text-[10px] text-slate-500 uppercase">Target Engine:</span>
+                <div className="text-white font-extrabold text-xs">{CURRENT_MODEL.name}</div>
                 <div className="flex gap-2 flex-wrap pt-1">
                   <span className="text-[9px] bg-indigo-500/15 text-indigo-400 border border-indigo-500/20 px-1.5 py-0.5 rounded">
                     {CURRENT_MODEL.size} RAM
@@ -295,10 +283,7 @@ export default function EvaluationPage() {
               {messages.map((msg) => {
                 const isUser = msg.role === 'user'
                 return (
-                  <div
-                    key={msg.id}
-                    className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
-                  >
+                  <div key={msg.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
                     <div
                       className={`max-w-xl rounded-xl p-3 space-y-1.5 border ${
                         isUser
@@ -393,38 +378,42 @@ export default function EvaluationPage() {
             </div>
 
             {/* Metric tiles */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-slate-950 p-3 rounded-lg border border-slate-800 font-mono text-[9px]">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-[16%_16%_16%_20%_25%] gap-3 bg-slate-950 p-3 rounded-lg border border-slate-800 font-mono text-[9px]">
               <div>
-                <span className="text-slate-500 uppercase font-bold block">
-                  Input Payload Size
-                </span>
+                <span className="text-slate-500 uppercase font-bold block">Input</span>
                 <span className="text-white font-black text-xs block mt-0.5">
-                  {hasData ? `${metrics.prompt_tokens} tokens` : '—'}
+                  {hasData ? `${metrics.inputTokens} ` : '—'}
                 </span>
-                <span className="text-emerald-400 font-semibold block mt-0.5">
-                  Prefill: {hasData ? `${metrics.prompt_eval_duration}s` : '—'}
-                </span>
+                <span className="text-emerald-400 font-normal block mt-0.5">input_tokens</span>
               </div>
               <div>
-                <span className="text-slate-500 uppercase font-bold block">
-                  Output Decode Size
-                </span>
+                <span className="text-slate-500 uppercase font-bold block">Output</span>
                 <span className="text-white font-black text-xs block mt-0.5">
-                  {hasData ? `${metrics.completion_tokens} tokens` : '—'}
+                  {hasData ? `${metrics.outputTokens} ` : '—'}
                 </span>
-                <span className="text-indigo-400 font-semibold block mt-0.5">
-                  Decode: {hasData ? `${metrics.generation_duration}s` : '—'}
-                </span>
+                <span className="text-indigo-400 font-normal block mt-0.5">output_tokens</span>
               </div>
               <div>
-                <span className="text-slate-500 uppercase font-bold block">
-                  Inference TTFT
-                </span>
+                <span className="text-slate-500 uppercase font-bold block">TTFT</span>
                 <span className="text-amber-400 font-black text-xs block mt-0.5">
-                  {hasData ? `${metrics.time_to_first_token}s` : '—'}
+                  {hasData ? `${metrics.timeToFirstToken.toFixed(1)}s` : '—'}
                 </span>
-                <span className="text-slate-500 block mt-0.5">
-                  Pre-load latency
+                <span className="text-slate-500 block mt-0.5">time_to_first_token</span>
+              </div>
+              <div>
+                <span className="text-slate-500 uppercase font-bold block">Prompt Processing</span>
+                <span className="text-white font-black text-xs block mt-0.5">
+                  {hasData ? `${Math.round(metrics.promptTokensPerSecond)} tok/s` : '—'}
+                </span>
+                <span className="text-emerald-400 font-normal block mt-0.5">prompt_tokens_per_second</span>
+              </div>
+              <div>
+                <span className="text-slate-500 uppercase font-bold block">Token Generation</span>
+                <span className="text-white font-black text-xs block mt-0.5">
+                  {hasData ? `${Math.round(metrics.generationTokensPerSecond)} tok/s` : '—'}
+                </span>
+                <span className="text-indigo-400 font-normal block mt-0.5">
+                  generation_tokens_per_second
                 </span>
               </div>
             </div>

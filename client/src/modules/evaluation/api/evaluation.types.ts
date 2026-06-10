@@ -13,12 +13,11 @@ export interface EvaluationSSEEvent {
   request?: unknown
   response?: unknown
   metrics?: {
-    promptTokens?: number
-    completionTokens?: number
-    totalTokens?: number
-    promptEvalDuration?: number
-    generationDuration?: number
+    inputTokens?: number
+    outputTokens?: number
     timeToFirstToken?: number
+    promptTokensPerSecond?: number
+    generationTokensPerSecond?: number
   }
   done?: boolean
   error?: string
@@ -50,10 +49,9 @@ export interface EvaluationResponsePayload {
 }
 
 export interface EvaluationMetrics {
-  promptTokens: number
-  completionTokens: number
-  totalTokens: number
-  promptEvalDuration: number
-  generationDuration: number
+  inputTokens: number
+  outputTokens: number
   timeToFirstToken: number
+  promptTokensPerSecond: number
+  generationTokensPerSecond: number
 }

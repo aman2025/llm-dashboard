@@ -42,9 +42,6 @@ export const evaluationService = {
       })
     }
 
-    const startTime = performance.now()
-    let firstTokenTime: number | null = null
-
     try {
       const settings = await settingsService.getSettings()
       const activeModel = settings.activeLlm?.name
@@ -138,13 +135,6 @@ export const evaluationService = {
               usage = parsed.usage
             }
 
-            if (
-              firstTokenTime === null &&
-              (delta?.content || (delta?.tool_calls && delta.tool_calls.length > 0))
-            ) {
-              firstTokenTime = (performance.now() - startTime) / 1000
-            }
-
             if (delta?.content) {
               fullContent += delta.content
               onEvent({ content: delta.content })
@@ -168,8 +158,6 @@ export const evaluationService = {
           }
         }
       }
-
-      const endTime = (performance.now() - startTime) / 1000
 
       const message: Record<string, unknown> = {
         role: 'assistant',
@@ -198,16 +186,6 @@ export const evaluationService = {
         usage
       }
 
-      const promptTokens = usage?.prompt_tokens ?? 0
-      const completionTokens = usage?.completion_tokens ?? 0
-      const totalTokens =
-        usage?.total_tokens ?? promptTokens + completionTokens
-      const generationDuration = Math.max(
-        0,
-        endTime - (firstTokenTime ?? endTime)
-      )
-      const promptEvalDuration = firstTokenTime ?? 0
-
       console.log('\n=== EVAL LLM RESPONSE ===')
       console.log(JSON.stringify(finalResponse, null, 2))
       console.log('========================\n')
@@ -215,12 +193,12 @@ export const evaluationService = {
       onEvent({
         response: finalResponse,
         metrics: {
-          promptTokens,
-          completionTokens,
-          totalTokens,
-          promptEvalDuration,
-          generationDuration,
-          timeToFirstToken: firstTokenTime ?? 0
+          inputTokens: usage?.input_tokens ?? usage?.prompt_tokens ?? 0,
+          outputTokens: usage?.output_tokens ?? usage?.completion_tokens ?? 0,
+          timeToFirstToken: usage?.time_to_first_token ?? 0,
+          promptTokensPerSecond: usage?.prompt_tokens_per_second ?? 0,
+          generationTokensPerSecond:
+            usage?.generation_tokens_per_second ?? 0
         }
       })
 

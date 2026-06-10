@@ -8,12 +8,11 @@ export interface EvaluationSSEEvent {
   request?: unknown
   response?: unknown
   metrics?: {
-    promptTokens?: number
-    completionTokens?: number
-    totalTokens?: number
-    promptEvalDuration?: number
-    generationDuration?: number
+    inputTokens?: number
+    outputTokens?: number
     timeToFirstToken?: number
+    promptTokensPerSecond?: number
+    generationTokensPerSecond?: number
   }
   done?: boolean
   error?: string
@@ -53,5 +52,14 @@ export interface LLMStreamChunk {
     prompt_tokens?: number
     completion_tokens?: number
     total_tokens?: number
+    input_tokens?: number
+    output_tokens?: number
+    model_load_duration?: number
+    time_to_first_token?: number
+    total_time?: number
+    prompt_eval_duration?: number
+    generation_duration?: number
+    prompt_tokens_per_second?: number
+    generation_tokens_per_second?: number
   }
 }

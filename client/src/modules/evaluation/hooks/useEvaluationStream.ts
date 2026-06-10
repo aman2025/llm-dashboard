@@ -87,12 +87,13 @@ export function useEvaluationStream() {
 
               if (event.metrics) {
                 setLastMetrics({
-                  promptTokens: event.metrics.promptTokens ?? 0,
-                  completionTokens: event.metrics.completionTokens ?? 0,
-                  totalTokens: event.metrics.totalTokens ?? 0,
-                  promptEvalDuration: event.metrics.promptEvalDuration ?? 0,
-                  generationDuration: event.metrics.generationDuration ?? 0,
-                  timeToFirstToken: event.metrics.timeToFirstToken ?? 0
+                  inputTokens: event.metrics.inputTokens ?? 0,
+                  outputTokens: event.metrics.outputTokens ?? 0,
+                  timeToFirstToken: event.metrics.timeToFirstToken ?? 0,
+                  promptTokensPerSecond:
+                    event.metrics.promptTokensPerSecond ?? 0,
+                  generationTokensPerSecond:
+                    event.metrics.generationTokensPerSecond ?? 0
                 })
               }
 
