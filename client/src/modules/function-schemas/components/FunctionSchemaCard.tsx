@@ -46,6 +46,7 @@ export function FunctionSchemaCard({ schema, onEdit }: FunctionSchemaCardProps) 
                 onClick={() => onEdit(schema)}
                 className="p-1 rounded text-slate-500 hover:text-white hover:bg-slate-800"
                 title="Edit"
+                aria-label={`Edit ${schema.name}`}
               >
                 <Pencil className="w-3 h-3" />
               </button>
@@ -54,6 +55,7 @@ export function FunctionSchemaCard({ schema, onEdit }: FunctionSchemaCardProps) 
                 onClick={handleDelete}
                 className="p-1 rounded text-slate-500 hover:text-red-400 hover:bg-slate-800"
                 title="Delete"
+                aria-label={`Delete ${schema.name}`}
               >
                 <Trash2 className="w-3 h-3" />
               </button>
