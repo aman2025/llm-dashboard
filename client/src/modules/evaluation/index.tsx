@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   Wrench,
   Sliders,
@@ -6,6 +7,7 @@ import {
   MessageSquare,
   Send
 } from 'lucide-react'
+import { useEvaluationStream } from './hooks/useEvaluationStream'
 
 interface ToolDefinition {
   id: string
@@ -24,10 +26,10 @@ interface ChatMessage {
   toolName?: string
   toolArgs?: string
   toolResult?: string
-  verdict?: 'pass' | 'fail' | 'flagged' | 'unrated'
+  isLive?: boolean
 }
 
-// ===== HARDCODED MOCK DATA (static mockup — no API, no real state) =====
+// ===== STATIC REFERENCE DATA =====
 
 const CURRENT_MODEL = {
   name: 'Qwen2.5-Coder-32B',
@@ -41,132 +43,101 @@ const SYSTEM_PROMPT =
 
 const TOOLS: ToolDefinition[] = [
   {
-    id: 'get_weather_forecast',
-    name: 'get_weather_forecast',
-    description:
-      'Retrieve live weather conditions for a single target location',
+    id: 'get_weather',
+    name: 'get_weather',
+    description: 'Retrieve live weather conditions for a single target location',
     parameters: '{"location": {"type": "string"}}',
     enabled: true
   }
 ]
 
-const SUGGESTIONS = [
-  {
-    title: 'Query Weather API',
-    text: 'What is the weather forecast like in Tokyo right now? Use appropriate tools.'
-  },
-  {
-    title: 'KV Cache Paragraph',
-    text: "Explain benefits of KV Cache. Rule: Do not use the letter 'e' or 'E' in any word."
-  },
-  {
-    title: 'Grid Upload Formula',
-    text: 'Solve: We need to upload 14 VRAM buffers of 12GB. With a limit of 45GB concurrent slots, how many loops?'
-  }
-]
-
-const MESSAGES: ChatMessage[] = [
-  {
-    id: 'msg-001',
-    role: 'user',
-    content: SUGGESTIONS[0].text,
-    timestamp: '10:24'
-  },
-  {
-    id: 'msg-002',
-    role: 'assistant',
-    content:
-      'Calling get_weather_forecast with Tokyo as the target location. Results are in the tool call panel below.',
-    timestamp: '10:24',
-    isToolCall: true,
-    toolName: 'get_weather_forecast',
-    toolArgs: '{"location": "Tokyo"}',
-    toolResult:
-      '{"temp_c": 18.4, "wind_kph": 12, "humidity_pct": 64, "conditions": "Partly cloudy"}',
-    verdict: 'pass'
-  },
-  {
-    id: 'msg-003',
-    role: 'user',
-    content: SUGGESTIONS[1].text,
-    timestamp: '10:26'
-  },
-  {
-    id: 'msg-004',
-    role: 'assistant',
-    content:
-      'KV caching holds prior K and V tensors in fast memory so a model can skip recomputing them for tokens it has already scanned. It cuts latency, lifts throughput, and trims cost for long prompts. You will typically attain a big win on long multi-turn chats or RAG, but pay for it with additional VRAM.',
-    timestamp: '10:26',
-    verdict: 'flagged'
-  }
-]
-
-const INSPECTED_ID = 'msg-002'
-
-const REQUEST_PAYLOAD = {
-  model: `MLX-${CURRENT_MODEL.name.replace(/\s+/g, '-')}-${CURRENT_MODEL.quantization}`,
-  messages: [
-    { role: 'system', content: SYSTEM_PROMPT },
-    { role: 'user', content: SUGGESTIONS[0].text }
-  ],
-  temperature: 0.7,
-  top_p: 0.9,
-  max_tokens: 350,
-  stream: true,
-  stream_options: { include_usage: true },
-  tools: TOOLS.filter((t) => t.enabled).map((t) => ({
-    type: 'function',
-    function: {
-      name: t.name,
-      description: t.description,
-      parameters: { type: 'object', properties: JSON.parse(t.parameters) }
-    }
-  }))
-}
-
-const RESPONSE_PAYLOAD = {
-  id: 'msg-002',
-  object: 'chat.completion',
-  model: `MLX-${CURRENT_MODEL.name.replace(/\s+/g, '-')}-${CURRENT_MODEL.quantization}`,
-  created: Math.floor(Date.now() / 1000) - 30,
-  choices: [
-    {
-      index: 0,
-      message: {
-        role: 'assistant',
-        content: MESSAGES[1].content,
-        tool_calls: [
-          {
-            id: 'call-00002',
-            type: 'function',
-            function: {
-              name: 'get_weather_forecast',
-              arguments: { location: 'Tokyo' }
-            }
-          }
-        ]
-      },
-      finish_reason: 'tool_calls'
-    }
-  ],
-  usage: {
-    prompt_tokens: 142,
-    completion_tokens: 28,
-    total_tokens: 170
-  }
-}
-
-const ACTIVE_METRICS = {
-  prompt_tokens: 142,
-  completion_tokens: 28,
-  total_tokens: 170,
-  prompt_eval_duration: 0.18,
-  generation_duration: 1.77,
-  time_to_first_token: 0.18
+function formatTimestamp(date: Date): string {
+  return date.toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 }
 
 export default function EvaluationPage() {
-  const inspected = MESSAGES.find((m) => m.id === INSPECTED_ID) ?? MESSAGES[1]
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [input, setInput] = useState('')
+
+  const { startStream, stopStream, isStreaming, lastRequest, lastResponse, lastMetrics } =
+    useEvaluationStream()
+
+  const hasData = lastRequest !== null || lastResponse !== null
+  const metrics = {
+    prompt_tokens: lastMetrics?.promptTokens ?? 0,
+    completion_tokens: lastMetrics?.completionTokens ?? 0,
+    total_tokens: lastMetrics?.totalTokens ?? 0,
+    prompt_eval_duration: lastMetrics?.promptEvalDuration ?? 0,
+    generation_duration: lastMetrics?.generationDuration ?? 0,
+    time_to_first_token: lastMetrics?.timeToFirstToken ?? 0
+  }
+
+  const handleSend = async () => {
+    const trimmed = input.trim()
+    if (!trimmed || isStreaming) return
+
+    const now = formatTimestamp(new Date())
+    const userMsg: ChatMessage = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      content: trimmed,
+      timestamp: now
+    }
+    const assistantId = `assistant-${Date.now()}`
+    const assistantMsg: ChatMessage = {
+      id: assistantId,
+      role: 'assistant',
+      content: '',
+      timestamp: now,
+      isLive: true
+    }
+
+    const history = messages
+      .filter((m) => m.role === 'user' || m.role === 'assistant')
+      .map((m) => ({ role: m.role, content: m.content }))
+
+    setMessages((prev) => [...prev, userMsg, assistantMsg])
+    setInput('')
+
+    try {
+      await startStream(trimmed, history, {
+        onContent: (accumulated) => {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === assistantId ? { ...m, content: accumulated } : m))
+          )
+        },
+        onComplete: (fullContent, finalResponse) => {
+          const toolCalls = finalResponse?.choices?.[0]?.message?.tool_calls
+          if (toolCalls && toolCalls.length > 0) {
+            const first = toolCalls[0]
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantId
+                  ? {
+                      ...m,
+                      content: fullContent,
+                      isToolCall: true,
+                      toolName: first.function.name,
+                      toolArgs: first.function.arguments
+                    }
+                  : m
+              )
+            )
+          }
+        }
+      })
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to send evaluation message:', err)
+    }
+  }
+
+  const handleStop = () => {
+    stopStream()
+  }
 
   return (
     <div className="space-y-6 p-6 text-slate-100 max-w-[1232px] mx-auto">
@@ -235,7 +206,7 @@ export default function EvaluationPage() {
               <button
                 type="button"
                 className="text-[9px] bg-indigo-600 text-white px-2 py-0.5 rounded font-mono font-bold uppercase cursor-not-allowed opacity-70"
-                title="Static mockup — disabled"
+                title="Static — disabled"
               >
                 + Add
               </button>
@@ -299,8 +270,10 @@ export default function EvaluationPage() {
               </div>
               <button
                 type="button"
-                className="text-[10px] text-slate-400 font-bold font-mono uppercase border border-slate-800 bg-slate-950/40 px-2 py-1 rounded cursor-not-allowed opacity-70"
-                title="Static mockup — disabled"
+                onClick={() => setMessages([])}
+                disabled={messages.length === 0}
+                className="text-[10px] text-slate-400 font-bold font-mono uppercase border border-slate-800 bg-slate-950/40 px-2 py-1 rounded hover:text-white hover:border-slate-700 transition-colors disabled:opacity-40 disabled:hover:text-slate-400 disabled:hover:border-slate-800 disabled:cursor-not-allowed"
+                title="Clear chat history"
               >
                 Clear history
               </button>
@@ -308,7 +281,18 @@ export default function EvaluationPage() {
 
             {/* Chat Message Feed */}
             <div className="flex-1 p-4 overflow-y-auto space-y-3.5 scrollbar-thin bg-slate-950/40">
-              {MESSAGES.map((msg) => {
+              {messages.length === 0 && (
+                <div className="h-full flex items-center justify-center text-center text-slate-600 text-xs font-mono py-12">
+                  <div>
+                    <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                    <p>No messages yet.</p>
+                    <p className="text-[10px] mt-1 text-slate-700">
+                      Type a prompt below to query the local model.
+                    </p>
+                  </div>
+                </div>
+              )}
+              {messages.map((msg) => {
                 const isUser = msg.role === 'user'
                 return (
                   <div
@@ -324,6 +308,9 @@ export default function EvaluationPage() {
                     >
                       <div className="text-[11px] leading-relaxed whitespace-pre-wrap font-sans text-slate-200">
                         {msg.content}
+                        {msg.isLive && msg.content === '' && (
+                          <span className="inline-block ml-1 text-slate-500 animate-pulse">▍</span>
+                        )}
                       </div>
 
                       {/* Tool call inline */}
@@ -336,9 +323,16 @@ export default function EvaluationPage() {
                           <div className="bg-slate-950 p-1.5 border border-slate-800 rounded text-indigo-300">
                             <strong>Args:</strong> {msg.toolArgs}
                           </div>
-                          <div className="bg-slate-950 p-1.5 border border-slate-800 rounded text-emerald-300 break-all">
-                            <strong>Result:</strong> {msg.toolResult}
-                          </div>
+                          {msg.toolResult && (
+                            <div className="bg-slate-950 p-1.5 border border-slate-800 rounded text-emerald-300 break-all">
+                              <strong>Result:</strong> {msg.toolResult}
+                            </div>
+                          )}
+                          {!msg.toolResult && (
+                            <div className="bg-slate-950 p-1.5 border border-slate-800 rounded text-slate-500 italic">
+                              (no result — tool call passed through, not executed)
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -347,24 +341,42 @@ export default function EvaluationPage() {
               })}
             </div>
 
-            {/* Input (disabled mock) */}
+            {/* Input */}
             <div className="border-t border-slate-800 p-3 bg-slate-900/40">
               <div className="flex gap-2 bg-slate-950 border border-slate-800 rounded-lg p-1 items-center">
                 <input
                   type="text"
-                  value=""
-                  readOnly
-                  placeholder="Type benchmark prompt... (static mockup — disabled)"
-                  className="flex-1 bg-transparent px-2.5 text-xs text-slate-500 outline-none placeholder:text-slate-600 cursor-not-allowed"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      handleSend()
+                    }
+                  }}
+                  placeholder="Type benchmark prompt..."
+                  className="flex-1 bg-transparent px-2.5 text-xs text-slate-200 outline-none placeholder:text-slate-600"
+                  disabled={isStreaming}
                 />
-                <button
-                  type="button"
-                  disabled
-                  className="p-1.5 bg-indigo-600 rounded-md text-white disabled:opacity-40 cursor-not-allowed flex items-center justify-center shrink-0"
-                  title="Static mockup — disabled"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                </button>
+                {isStreaming ? (
+                  <button
+                    type="button"
+                    onClick={handleStop}
+                    className="px-3 py-1.5 bg-red-600 rounded-md text-white text-[10px] font-bold font-mono uppercase hover:bg-red-500 flex items-center justify-center shrink-0"
+                  >
+                    Stop
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleSend}
+                    disabled={!input.trim()}
+                    className="p-1.5 bg-indigo-600 rounded-md text-white disabled:opacity-40 hover:bg-indigo-500 flex items-center justify-center shrink-0"
+                    title="Send"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -387,10 +399,10 @@ export default function EvaluationPage() {
                   Input Payload Size
                 </span>
                 <span className="text-white font-black text-xs block mt-0.5">
-                  {ACTIVE_METRICS.prompt_tokens} tokens
+                  {hasData ? `${metrics.prompt_tokens} tokens` : '—'}
                 </span>
                 <span className="text-emerald-400 font-semibold block mt-0.5">
-                  Prefill: {ACTIVE_METRICS.prompt_eval_duration}s
+                  Prefill: {hasData ? `${metrics.prompt_eval_duration}s` : '—'}
                 </span>
               </div>
               <div>
@@ -398,10 +410,10 @@ export default function EvaluationPage() {
                   Output Decode Size
                 </span>
                 <span className="text-white font-black text-xs block mt-0.5">
-                  {ACTIVE_METRICS.completion_tokens} tokens
+                  {hasData ? `${metrics.completion_tokens} tokens` : '—'}
                 </span>
                 <span className="text-indigo-400 font-semibold block mt-0.5">
-                  Decode: {ACTIVE_METRICS.generation_duration}s
+                  Decode: {hasData ? `${metrics.generation_duration}s` : '—'}
                 </span>
               </div>
               <div>
@@ -409,7 +421,7 @@ export default function EvaluationPage() {
                   Inference TTFT
                 </span>
                 <span className="text-amber-400 font-black text-xs block mt-0.5">
-                  {ACTIVE_METRICS.time_to_first_token}s
+                  {hasData ? `${metrics.time_to_first_token}s` : '—'}
                 </span>
                 <span className="text-slate-500 block mt-0.5">
                   Pre-load latency
@@ -430,9 +442,15 @@ export default function EvaluationPage() {
                   </div>
                 </div>
                 <div className="p-3 font-mono text-[10px] bg-slate-950 max-h-[350px] min-h-[250px] overflow-y-auto overflow-x-auto scrollbar-thin">
-                  <pre className="text-slate-300 whitespace-pre leading-relaxed select-all">
-                    {JSON.stringify(REQUEST_PAYLOAD, null, 2)}
-                  </pre>
+                  {lastRequest ? (
+                    <pre className="text-slate-300 whitespace-pre leading-relaxed select-all">
+                      {JSON.stringify(lastRequest, null, 2)}
+                    </pre>
+                  ) : (
+                    <div className="h-full min-h-[226px] flex items-center justify-center text-slate-600 text-[10px] font-mono">
+                      Awaiting first request…
+                    </div>
+                  )}
                 </div>
                 <div className="p-1.5 bg-slate-950 border-t border-slate-800 text-[8px] text-slate-500 font-mono text-center">
                   Request Payload standard payload JSON
@@ -450,9 +468,15 @@ export default function EvaluationPage() {
                   </div>
                 </div>
                 <div className="p-3 font-mono text-[10px] bg-slate-950 max-h-[350px] min-h-[250px] overflow-y-auto overflow-x-auto scrollbar-thin">
-                  <pre className="text-indigo-200 whitespace-pre leading-relaxed select-all">
-                    {JSON.stringify(RESPONSE_PAYLOAD, null, 2)}
-                  </pre>
+                  {lastResponse ? (
+                    <pre className="text-indigo-200 whitespace-pre leading-relaxed select-all">
+                      {JSON.stringify(lastResponse, null, 2)}
+                    </pre>
+                  ) : (
+                    <div className="h-full min-h-[226px] flex items-center justify-center text-slate-600 text-[10px] font-mono">
+                      Awaiting first response…
+                    </div>
+                  )}
                 </div>
                 <div className="p-1.5 bg-slate-950 border-t border-slate-800 text-[8px] text-slate-500 font-mono text-center">
                   Response Payload standard payload JSON

@@ -30,7 +30,7 @@ export const app = new Elysia()
     }
 
     // Skip wrapping entirely for streaming endpoints
-    if (path === '/api/chat/stream') {
+    if (path === '/api/chat/stream' || path === '/api/evaluation/stream') {
       return response
     }
 
