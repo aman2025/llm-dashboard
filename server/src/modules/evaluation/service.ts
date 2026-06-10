@@ -1,4 +1,5 @@
 import { settingsService } from '@/modules/settings/service'
+import { functionSchemasService } from '@/modules/function-schemas/service'
 import type {
   EvaluationStreamRequest,
   EvaluationSSEEvent,
@@ -11,21 +12,6 @@ const API_KEY = 'zr425899'
 
 const SYSTEM_PROMPT =
   'You are a high-fidelity local LLM expert optimized to obey negative guidelines and structured tool signatures. Think step-by-step prior to writing the payload return.'
-
-const GET_WEATHER_TOOL = {
-  type: 'function',
-  function: {
-    name: 'get_weather',
-    description: 'Retrieve live weather conditions for a single target location',
-    parameters: {
-      type: 'object',
-      properties: {
-        location: { type: 'string' }
-      },
-      required: ['location']
-    }
-  }
-}
 
 export const evaluationService = {
   async stream(
@@ -58,6 +44,16 @@ export const evaluationService = {
         { role: 'user', content: req.message }
       ]
 
+      const enabledSchemas = await functionSchemasService.getEnabled()
+      const tools = enabledSchemas.map((s) => ({
+        type: 'function' as const,
+        function: {
+          name: s.name,
+          description: s.description,
+          parameters: JSON.parse(s.parameters) as Record<string, unknown>
+        }
+      }))
+
       const requestPayload = {
         model: activeModel,
         messages: llmMessages,
@@ -66,7 +62,7 @@ export const evaluationService = {
         max_tokens: 350,
         stream: true,
         stream_options: { include_usage: true },
-        tools: [GET_WEATHER_TOOL]
+        tools
       }
 
       console.log('\n=== EVAL LLM REQUEST ===')
