@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { AppError } from '@/lib/errors'
 import {
-  validateJsonSchemaShape,
+  parseDefinition,
   type CreateFunctionSchemaInput,
   type UpdateFunctionSchemaInput
 } from './models'
@@ -48,8 +48,9 @@ export async function getById(id: string) {
 }
 
 export async function create(input: CreateFunctionSchemaInput) {
+  let parsed: { name: string; description: string; parameters: string }
   try {
-    validateJsonSchemaShape(input.parameters)
+    parsed = parseDefinition(input.definition)
   } catch (err) {
     if (err instanceof Error) {
       throw new AppError('VALIDATION_ERROR', err.message, 400)
@@ -57,13 +58,20 @@ export async function create(input: CreateFunctionSchemaInput) {
     throw err
   }
   try {
-    const row = await prisma.functionSchema.create({ data: input })
+    const row = await prisma.functionSchema.create({
+      data: {
+        name: parsed.name,
+        description: parsed.description,
+        parameters: parsed.parameters,
+        enabled: input.enabled ?? true
+      }
+    })
     return toResponse(row)
   } catch (err) {
     if (err instanceof Error && 'code' in err && (err as { code: string }).code === 'P2002') {
       throw new AppError(
         'CONFLICT',
-        `A function schema named "${input.name}" already exists`,
+        `A function schema named "${parsed.name}" already exists`,
         409
       )
     }
@@ -72,18 +80,31 @@ export async function create(input: CreateFunctionSchemaInput) {
 }
 
 export async function update(id: string, input: UpdateFunctionSchemaInput) {
-  if (input.parameters !== undefined) {
+  const data: {
+    name?: string
+    description?: string
+    parameters?: string
+    enabled?: boolean
+  } = {}
+  if (input.definition !== undefined) {
+    let parsed: { name: string; description: string; parameters: string }
     try {
-      validateJsonSchemaShape(input.parameters)
+      parsed = parseDefinition(input.definition)
     } catch (err) {
       if (err instanceof Error) {
         throw new AppError('VALIDATION_ERROR', err.message, 400)
       }
       throw err
     }
+    data.name = parsed.name
+    data.description = parsed.description
+    data.parameters = parsed.parameters
+  }
+  if (input.enabled !== undefined) {
+    data.enabled = input.enabled
   }
   try {
-    const row = await prisma.functionSchema.update({ where: { id }, data: input })
+    const row = await prisma.functionSchema.update({ where: { id }, data })
     return toResponse(row)
   } catch (err) {
     if (err instanceof Error && 'code' in err) {

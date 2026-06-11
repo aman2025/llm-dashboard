@@ -31,12 +31,7 @@ export function FunctionSchemasPanel() {
     setEditing(null)
   }
 
-  const handleSubmit = (values: {
-    name: string
-    description: string
-    parameters: string
-    enabled: boolean
-  }) => {
+  const handleSubmit = (values: { definition: string; enabled: boolean }) => {
     if (editing) {
       update.mutate(
         { id: editing.id, input: values },

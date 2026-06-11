@@ -5,34 +5,77 @@ const NAME_REGEX = /^[a-zA-Z0-9_-]+$/
 
 interface FunctionSchemaFormProps {
   initialValue?: FunctionSchema
-  onSubmit: (values: {
-    name: string
-    description: string
-    parameters: string
-    enabled: boolean
-  }) => void
+  onSubmit: (values: { definition: string; enabled: boolean }) => void
   onCancel: () => void
   isSubmitting: boolean
 }
 
-function validateJsonShape(raw: string): string | null {
+function buildInitialDefinition(initialValue: FunctionSchema | undefined): string {
+  if (!initialValue) return ''
+  let parsedParameters: unknown = {}
+  try {
+    parsedParameters = JSON.parse(initialValue.parameters)
+  } catch {
+    parsedParameters = {}
+  }
+  return JSON.stringify(
+    {
+      name: initialValue.name,
+      description: initialValue.description,
+      parameters: parsedParameters
+    },
+    null,
+    2
+  )
+}
+
+function validateDefinition(raw: string): string | null {
+  const trimmed = raw.trim()
+  if (!trimmed) return 'Definition is required'
+
   let parsed: unknown
   try {
     parsed = JSON.parse(raw)
   } catch {
-    return 'Parameters must be valid JSON'
+    return 'Definition must be valid JSON'
   }
   if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-    return 'Parameters must be a JSON object'
+    return 'Definition must be a JSON object'
   }
   const obj = parsed as Record<string, unknown>
-  if (obj.type !== 'object') {
+
+  if (typeof obj.name !== 'string' || obj.name.length === 0) {
+    return 'Definition must declare a "name" string'
+  }
+  if (obj.name.length > 64) {
+    return 'Name must be 64 characters or fewer'
+  }
+  if (!NAME_REGEX.test(obj.name)) {
+    return 'Use letters, digits, underscores, or dashes only'
+  }
+
+  if (typeof obj.description !== 'string' || obj.description.length === 0) {
+    return 'Definition must declare a "description" string'
+  }
+  if (obj.description.length > 500) {
+    return 'Description must be 500 characters or fewer'
+  }
+
+  if (
+    typeof obj.parameters !== 'object' ||
+    obj.parameters === null ||
+    Array.isArray(obj.parameters)
+  ) {
+    return 'Definition must declare a "parameters" object'
+  }
+  const params = obj.parameters as Record<string, unknown>
+  if (params.type !== 'object') {
     return 'Parameters must declare "type": "object"'
   }
   if (
-    typeof obj.properties !== 'object' ||
-    obj.properties === null ||
-    Array.isArray(obj.properties)
+    typeof params.properties !== 'object' ||
+    params.properties === null ||
+    Array.isArray(params.properties)
   ) {
     return 'Parameters must declare a "properties" object'
   }
@@ -45,43 +88,20 @@ export function FunctionSchemaForm({
   onCancel,
   isSubmitting
 }: FunctionSchemaFormProps) {
-  const [name, setName] = useState(initialValue?.name ?? '')
-  const [description, setDescription] = useState(initialValue?.description ?? '')
-  const [parameters, setParameters] = useState(initialValue?.parameters ?? '')
+  const [definition, setDefinition] = useState(() =>
+    buildInitialDefinition(initialValue)
+  )
   const [enabled, setEnabled] = useState(initialValue?.enabled ?? true)
   const [error, setError] = useState<string | null>(null)
 
-  const trimmedName = name.trim()
-  const trimmedDescription = description.trim()
-
-  const nameError =
-    !trimmedName
-      ? 'Name is required'
-      : trimmedName.length > 64
-        ? 'Name must be 64 characters or fewer'
-        : !NAME_REGEX.test(trimmedName)
-          ? 'Use letters, digits, underscores, or dashes only'
-          : null
-
-  const descriptionError = !trimmedDescription ? 'Description is required' : null
-
   const handleSubmit = () => {
-    if (nameError || descriptionError) {
-      setError(nameError ?? descriptionError)
-      return
-    }
-    const shapeError = validateJsonShape(parameters)
+    const shapeError = validateDefinition(definition)
     if (shapeError) {
       setError(shapeError)
       return
     }
     setError(null)
-    onSubmit({
-      name: trimmedName,
-      description: trimmedDescription,
-      parameters,
-      enabled
-    })
+    onSubmit({ definition, enabled })
   }
 
   return (
@@ -95,39 +115,23 @@ export function FunctionSchemaForm({
 
       <div className="space-y-1.5">
         <label className="text-[9px] text-slate-400 font-bold uppercase tracking-wide">
-          Function Name
-        </label>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. fetch_system_logs"
-          className="w-full bg-slate-950 border border-slate-800 rounded-md px-2.5 py-1.5 text-[11px] font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500"
-        />
-      </div>
-
-      <div className="space-y-1.5">
-        <label className="text-[9px] text-slate-400 font-bold uppercase tracking-wide">
-          Purpose / Description
-        </label>
-        <input
-          type="text"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Brief summary of function capabilities"
-          className="w-full bg-slate-950 border border-slate-800 rounded-md px-2.5 py-1.5 text-[11px] font-sans text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500"
-        />
-      </div>
-
-      <div className="space-y-1.5">
-        <label className="text-[9px] text-slate-400 font-bold uppercase tracking-wide">
-          Parameters Object JSON
+          Function Schema JSON
         </label>
         <textarea
-          value={parameters}
-          onChange={(e) => setParameters(e.target.value)}
-          rows={6}
-          placeholder='{ "query": { "type": "string" } }'
+          value={definition}
+          onChange={(e) => setDefinition(e.target.value)}
+          rows={12}
+          placeholder={`{
+  "name": "fetch_system_logs",
+  "description": "Retrieve recent system logs from the host",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "since": { "type": "string" }
+    },
+    "required": ["since"]
+  }
+}`}
           className="w-full bg-slate-950 border border-slate-800 rounded-md px-2.5 py-1.5 text-[10px] font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 resize-y"
         />
       </div>
@@ -142,9 +146,7 @@ export function FunctionSchemaForm({
         Enabled (include in LLM request)
       </label>
 
-      {error && (
-        <p className="text-[10px] text-red-400 font-mono">{error}</p>
-      )}
+      {error && <p className="text-[10px] text-red-400 font-mono">{error}</p>}
 
       <div className="flex gap-2">
         <button

@@ -9,15 +9,11 @@ export interface FunctionSchema {
 }
 
 export interface CreateFunctionSchemaInput {
-  name: string
-  description: string
-  parameters: string
+  definition: string
   enabled?: boolean
 }
 
 export interface UpdateFunctionSchemaInput {
-  name?: string
-  description?: string
-  parameters?: string
+  definition?: string
   enabled?: boolean
 }
