@@ -1,14 +1,7 @@
 import { useState } from 'react'
-import { Wrench, Sliders, Database, FileCode, MessageSquare, Send } from 'lucide-react'
+import { Sliders, Database, FileCode, MessageSquare, Send } from 'lucide-react'
 import { useEvaluationStream } from './hooks/useEvaluationStream'
-
-interface ToolDefinition {
-  id: string
-  name: string
-  description: string
-  parameters: string
-  enabled: boolean
-}
+import { FunctionSchemasPanel } from '@/modules/function-schemas/components/FunctionSchemasPanel'
 
 interface ChatMessage {
   id: string
@@ -33,16 +26,6 @@ const CURRENT_MODEL = {
 
 const SYSTEM_PROMPT =
   'You are a high-fidelity local LLM expert optimized to obey negative guidelines and structured tool signatures. Think step-by-step prior to writing the payload return.'
-
-const TOOLS: ToolDefinition[] = [
-  {
-    id: 'get_weather',
-    name: 'get_weather',
-    description: 'Retrieve live weather conditions for a single target location',
-    parameters: '{"location": {"type": "string"}}',
-    enabled: true
-  }
-]
 
 function formatTimestamp(date: Date): string {
   return date.toLocaleTimeString('en-GB', {
@@ -182,61 +165,8 @@ export default function EvaluationPage() {
             </div>
           </div>
 
-          {/* Function Schemas Card */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2">
-                <Wrench className="w-4 h-4 text-emerald-400" />
-                <h3 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
-                  Function Schemas
-                </h3>
-              </div>
-              <button
-                type="button"
-                className="text-[9px] bg-indigo-600 text-white px-2 py-0.5 rounded font-mono font-bold uppercase cursor-not-allowed opacity-70"
-                title="Static — disabled"
-              >
-                + Add
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              {TOOLS.map((tool) => (
-                <div
-                  key={tool.id}
-                  className={`p-3 rounded-lg border transition-all ${
-                    tool.enabled
-                      ? 'bg-slate-950 border-slate-800 opacity-100'
-                      : 'bg-slate-950/40 border-slate-900 opacity-60'
-                  }`}
-                >
-                  <div className="flex items-start gap-2.5">
-                    <input
-                      type="checkbox"
-                      checked={tool.enabled}
-                      readOnly
-                      className="mt-0.5 rounded border-slate-800 text-indigo-600 focus:ring-indigo-500 h-3.5 w-3.5 cursor-default"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-center gap-2">
-                        <span className="text-[11px] font-bold font-mono text-slate-200 block truncate">
-                          {tool.name}
-                        </span>
-                      </div>
-                      <p className="text-[9px] text-slate-500 font-sans mt-0.5 leading-tight">
-                        {tool.description}
-                      </p>
-                    </div>
-                  </div>
-                  {tool.enabled && (
-                    <pre className="mt-2 text-[8px] bg-slate-900/80 p-1.5 rounded font-mono text-indigo-400 overflow-x-auto select-all border border-slate-950">
-                      {tool.parameters}
-                    </pre>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* Function Schemas Panel */}
+          <FunctionSchemasPanel />
         </div>
 
         {/* ==================== RIGHT COLUMN (8 cols) ==================== */}
