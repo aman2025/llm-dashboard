@@ -67,7 +67,7 @@ export function FunctionSchemaCard({ schema, onEdit }: FunctionSchemaCardProps) 
         </div>
       </div>
       {schema.enabled && (
-        <pre className="mt-2 text-[8px] bg-slate-900/80 p-1.5 rounded font-mono text-indigo-400 overflow-x-auto select-all border border-slate-950">
+        <pre className="mt-2 text-[8px] bg-slate-900/80 p-1.5 rounded font-mono text-indigo-400 overflow-x-auto select-all border border-slate-950 scrollbar-thin">
           {schema.parameters}
         </pre>
       )}

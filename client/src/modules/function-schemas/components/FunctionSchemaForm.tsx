@@ -132,7 +132,7 @@ export function FunctionSchemaForm({
     "required": ["since"]
   }
 }`}
-          className="w-full bg-slate-950 border border-slate-800 rounded-md px-2.5 py-1.5 text-[10px] font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 resize-y"
+          className="w-full bg-slate-950 border border-slate-800 rounded-md px-2.5 py-1.5 text-[10px] font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 resize-y scrollbar-thin"
         />
       </div>
 
