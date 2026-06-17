@@ -13,4 +13,11 @@ export interface LlmModel {
 export interface Settings {
   activeLlmId: string | null
   activeLlm: LlmModel | null
+  systemPrompt: string | null
+  maxTokens: number | null
+}
+
+export interface UpdateEvaluationParamsInput {
+  systemPrompt?: string
+  maxTokens?: number
 }
