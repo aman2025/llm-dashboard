@@ -17,3 +17,14 @@ export const settingsRouter = new Elysia({ prefix: '/settings' })
     }
     return await settingsService.setActiveLlm(parseResult.data.llmId)
   })
+  .patch('/evaluation-params', async ({ body }) => {
+    const parseResult = Models.updateEvaluationParams.safeParse(body)
+    if (!parseResult.success) {
+      const firstIssue = parseResult.error.issues[0]
+      throw new AppError(
+        'VALIDATION_ERROR',
+        firstIssue?.message ?? 'Validation failed'
+      )
+    }
+    return await settingsService.updateEvaluationParams(parseResult.data)
+  })
