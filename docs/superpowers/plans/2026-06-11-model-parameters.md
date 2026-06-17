@@ -68,7 +68,23 @@ bun run db:migrate:dev --name add_evaluation_params
 
 Expected: a new directory is created under `server/prisma/migrations/` whose name ends with `_add_evaluation_params/`, containing a `migration.sql` with two `ALTER TABLE` statements adding the `systemPrompt` and `maxTokens` columns as nullable. The Prisma client is regenerated automatically.
 
-- [ ] **Step 3: Verify the migration file is correct**
+- [ ] **Step 3: Verify the Prisma client types are up to date**
+
+Run from `server/`:
+
+```bash
+bun run db:generate
+```
+
+Expected: command completes successfully. This is a belt-and-braces regeneration of the Prisma client — `prisma migrate dev` *should* regenerate the client automatically, but in some environments the generated types at `node_modules/.prisma/client/index.d.ts` are stale after `migrate dev`. Without a fresh client, downstream code that uses the new `systemPrompt` / `maxTokens` fields will fail at runtime with `PrismaClientValidationError: Unknown argument`. Verify the new fields are present:
+
+```bash
+grep -c 'systemPrompt\|maxTokens' node_modules/.prisma/client/index.d.ts
+```
+
+Expected: a non-zero count (typically 5+ matches).
+
+- [ ] **Step 4: Verify the migration file is correct**
 
 Run:
 
@@ -78,7 +94,7 @@ ls server/prisma/migrations/ | tail -5
 
 Expected: the most recent directory name ends with `_add_evaluation_params`. Then read the generated `migration.sql` and confirm it contains `ADD COLUMN "systemPrompt" TEXT` and `ADD COLUMN "maxTokens" INTEGER` (nullable by default).
 
-- [ ] **Step 4: Verify the server still type-checks**
+- [ ] **Step 5: Verify the server still type-checks**
 
 Run from `server/`:
 
@@ -88,7 +104,7 @@ bun build src/index.ts --target=bun --outdir=/tmp/server-build-check
 
 Expected: build completes with no errors. The directory `/tmp/server-build-check/` now contains `index.js`. (Clean up afterwards with `rm -rf /tmp/server-build-check`.)
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 cd server && git add prisma/schema.prisma prisma/migrations/ && git commit -m "feat(db): add systemPrompt and maxTokens to Settings"
