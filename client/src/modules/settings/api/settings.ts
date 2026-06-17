@@ -1,5 +1,9 @@
 import { apiClient } from '@/api/axios'
-import type { LlmModel, Settings } from './settings.types'
+import type {
+  LlmModel,
+  Settings,
+  UpdateEvaluationParamsInput
+} from './settings.types'
 
 export const settingsApi = {
   /** Get settings */
@@ -9,5 +13,10 @@ export const settingsApi = {
   getAllLlmModels: () => apiClient.get<LlmModel[]>('/settings/llm-models'),
 
   /** Set active LLM model */
-  setActiveLlm: (llmId: string) => apiClient.patch<Settings>('/settings/active-llm', { llmId })
+  setActiveLlm: (llmId: string) =>
+    apiClient.patch<Settings>('/settings/active-llm', { llmId }),
+
+  /** Update system prompt and/or max output tokens */
+  updateEvaluationParams: (input: UpdateEvaluationParamsInput) =>
+    apiClient.patch<Settings>('/settings/evaluation-params', input)
 }
