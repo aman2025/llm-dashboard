@@ -15,9 +15,6 @@ interface ChatMessage {
   toolResult?: string
   isLive?: boolean
 }
-
-// ===== STATIC REFERENCE DATA =====
-
 function formatTimestamp(date: Date): string {
   return date.toLocaleTimeString('en-GB', {
     hour: '2-digit',
