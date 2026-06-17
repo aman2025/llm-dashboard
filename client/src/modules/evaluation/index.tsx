@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Sliders, Database, FileCode, MessageSquare, Send } from 'lucide-react'
+import { Database, FileCode, MessageSquare, Send } from 'lucide-react'
 import { useEvaluationStream } from './hooks/useEvaluationStream'
 import { FunctionSchemasPanel } from '@/modules/function-schemas/components/FunctionSchemasPanel'
+import { ModelParametersCard } from './components/ModelParametersCard'
 
 interface ChatMessage {
   id: string
@@ -16,16 +17,6 @@ interface ChatMessage {
 }
 
 // ===== STATIC REFERENCE DATA =====
-
-const CURRENT_MODEL = {
-  name: 'Qwen2.5-Coder-32B',
-  size: '22 GB',
-  quantization: '4-bit',
-  speed: 47.3
-}
-
-const SYSTEM_PROMPT =
-  'You are a high-fidelity local LLM expert optimized to obey negative guidelines and structured tool signatures. Think step-by-step prior to writing the payload return.'
 
 function formatTimestamp(date: Date): string {
   return date.toLocaleTimeString('en-GB', {
@@ -120,50 +111,7 @@ export default function EvaluationPage() {
         {/* ==================== LEFT COLUMN (4 cols) ==================== */}
         <div className="lg:col-span-4 space-y-6">
           {/* Model Parameters Card */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
-            <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
-              <Sliders className="w-4 h-4 text-indigo-400" />
-              <h3 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
-                Model Parameters
-              </h3>
-            </div>
-
-            <div className="space-y-4 font-mono text-xs">
-              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1.5">
-                <span className="text-[10px] text-slate-500 uppercase">Target Engine:</span>
-                <div className="text-white font-extrabold text-xs">{CURRENT_MODEL.name}</div>
-                <div className="flex gap-2 flex-wrap pt-1">
-                  <span className="text-[9px] bg-indigo-500/15 text-indigo-400 border border-indigo-500/20 px-1.5 py-0.5 rounded">
-                    {CURRENT_MODEL.size} RAM
-                  </span>
-                  <span className="text-[9px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded">
-                    {CURRENT_MODEL.quantization}
-                  </span>
-                </div>
-              </div>
-
-              {/* System Prompt (read-only mock) */}
-              <div className="space-y-1.5">
-                <label className="text-[9px] text-slate-400 font-bold uppercase tracking-wide">
-                  System Context Prompt:
-                </label>
-                <div className="w-full bg-slate-950 border border-slate-800 p-2 text-slate-200 rounded-lg font-sans text-xs leading-relaxed min-h-[90px]">
-                  {SYSTEM_PROMPT}
-                </div>
-              </div>
-
-              {/* Max tokens bar (static) */}
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-center text-[9px] text-slate-400 font-bold uppercase">
-                  <span>Max Out Tokens:</span>
-                  <span className="text-indigo-400 font-extrabold">350</span>
-                </div>
-                <div className="w-full h-1 bg-slate-950 rounded overflow-hidden">
-                  <div className="h-full bg-indigo-500" style={{ width: '34%' }} />
-                </div>
-              </div>
-            </div>
-          </div>
+          <ModelParametersCard />
 
           {/* Function Schemas Panel */}
           <FunctionSchemasPanel />
