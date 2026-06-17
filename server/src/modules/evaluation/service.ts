@@ -10,9 +10,6 @@ import type {
 const API_URL = 'http://192.168.2.8:8000/v1/chat/completions'
 const API_KEY = 'zr425899'
 
-const SYSTEM_PROMPT =
-  'You are a high-fidelity local LLM expert optimized to obey negative guidelines and structured tool signatures. Think step-by-step prior to writing the payload return.'
-
 export const evaluationService = {
   async stream(
     req: EvaluationStreamRequest,
@@ -38,11 +35,19 @@ export const evaluationService = {
         )
       }
 
-      const llmMessages: LLMMessage[] = [
-        { role: 'system', content: SYSTEM_PROMPT },
-        ...req.history.map((m) => ({ role: m.role, content: m.content })),
-        { role: 'user', content: req.message }
-      ]
+      const systemPrompt = settings.systemPrompt ?? ''
+      const maxTokens = settings.maxTokens ?? 1000
+
+      const llmMessages: LLMMessage[] = systemPrompt
+        ? [
+            { role: 'system', content: systemPrompt },
+            ...req.history.map((m) => ({ role: m.role, content: m.content })),
+            { role: 'user', content: req.message }
+          ]
+        : [
+            ...req.history.map((m) => ({ role: m.role, content: m.content })),
+            { role: 'user', content: req.message }
+          ]
 
       const enabledSchemas = await functionSchemasService.getEnabled()
       const tools = enabledSchemas.map((s) => ({
@@ -59,7 +64,7 @@ export const evaluationService = {
         messages: llmMessages,
         temperature: 0.7,
         top_p: 0.9,
-        max_tokens: 350,
+        max_tokens: maxTokens,
         stream: true,
         stream_options: { include_usage: true },
         tools
