@@ -19,6 +19,8 @@ model Settings {
   id             Int       @id @default(autoincrement())
   activeLlmId    String?
   activeLlm      LlmModel? @relation(fields: [activeLlmId], references: [id])
+  systemPrompt   String?
+  maxTokens      Int?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 }
