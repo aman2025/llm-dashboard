@@ -1,28 +1,50 @@
 import { prisma } from '@/lib/prisma'
 import { AppError } from '@/lib/errors'
-import type { Settings, LlmModel } from './models'
+import type {
+  LlmModel,
+  Settings,
+  UpdateEvaluationParams
+} from './models'
+
+function toSettings(row: {
+  id: number
+  activeLlmId: string | null
+  systemPrompt: string | null
+  maxTokens: number | null
+  activeLlm: {
+    id: string
+    name: string
+    size: string
+    type: string
+    description: string
+    fileSize: string
+    quantization: string
+    contextWindow: string
+    isActive: boolean
+  } | null
+}): Settings {
+  return {
+    activeLlmId: row.activeLlmId,
+    activeLlm: row.activeLlm,
+    systemPrompt: row.systemPrompt,
+    maxTokens: row.maxTokens
+  }
+}
 
 export async function getSettings(): Promise<Settings> {
-  let settings = await prisma.settings.findUnique({
+  let row = await prisma.settings.findUnique({
     where: { id: 1 },
-    include: {
-      activeLlm: true
-    }
+    include: { activeLlm: true }
   })
 
-  if (!settings) {
-    settings = await prisma.settings.create({
+  if (!row) {
+    row = await prisma.settings.create({
       data: { id: 1 },
-      include: {
-        activeLlm: true
-      }
+      include: { activeLlm: true }
     })
   }
 
-  return {
-    activeLlmId: settings.activeLlmId,
-    activeLlm: settings.activeLlm
-  }
+  return toSettings(row)
 }
 
 export async function getAllLlmModels(): Promise<LlmModel[]> {
@@ -44,43 +66,47 @@ export async function getAllLlmModels(): Promise<LlmModel[]> {
 }
 
 export async function setActiveLlm(llmId: string): Promise<Settings> {
-  // Verify the LLM exists
-  const llm = await prisma.llmModel.findUnique({
-    where: { id: llmId }
-  })
+  const llm = await prisma.llmModel.findUnique({ where: { id: llmId } })
 
   if (!llm) {
     throw new AppError('NOT_FOUND', `LLM model with id "${llmId}" not found`)
   }
 
-  // Update all models to inactive
-  await prisma.llmModel.updateMany({
-    data: { isActive: false }
-  })
+  await prisma.llmModel.updateMany({ data: { isActive: false } })
 
-  // Set the selected model as active
   await prisma.llmModel.update({
     where: { id: llmId },
     data: { isActive: true }
   })
 
-  // Update settings
-  const settings = await prisma.settings.update({
+  const row = await prisma.settings.update({
     where: { id: 1 },
     data: { activeLlmId: llmId },
-    include: {
-      activeLlm: true
-    }
+    include: { activeLlm: true }
   })
 
-  return {
-    activeLlmId: settings.activeLlmId,
-    activeLlm: settings.activeLlm
-  }
+  return toSettings(row)
+}
+
+export async function updateEvaluationParams(
+  input: UpdateEvaluationParams
+): Promise<Settings> {
+  const data: { systemPrompt?: string; maxTokens?: number } = {}
+  if (input.systemPrompt !== undefined) data.systemPrompt = input.systemPrompt
+  if (input.maxTokens !== undefined) data.maxTokens = input.maxTokens
+
+  const row = await prisma.settings.update({
+    where: { id: 1 },
+    data,
+    include: { activeLlm: true }
+  })
+
+  return toSettings(row)
 }
 
 export const settingsService = {
   getSettings,
   getAllLlmModels,
-  setActiveLlm
+  setActiveLlm,
+  updateEvaluationParams
 } as const
