@@ -60,7 +60,10 @@ async function main() {
     update: {},
     create: {
       id: 1,
-      activeLlmId: model1.id
+      activeLlmId: model1.id,
+      systemPrompt:
+        'You are a high-fidelity local LLM expert optimized to obey negative guidelines and structured tool signatures. Think step-by-step prior to writing the payload return.',
+      maxTokens: 1000
     }
   })
 
